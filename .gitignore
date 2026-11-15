@@ -1,0 +1,53 @@
+# Godot 4.x editor & project engine caches
+.godot/
+
+# Godot exported binaries & build outputs
+build/
+bin/
+export/
+*.apk
+*.aab
+*.exe
+*.zip
+*.tar.gz
+*.pck
+
+# Temporary & cache files
+*.tmp
+*.temp
+*.bak
+*.swp
+*~
+
+# Operating system files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+
+# IDE & local workspace configurations
+.idea/
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+*.sublime-project
+*.sublime-workspace
+
+# Local test logs & execution artifacts
+*.log
+test_output/
+reports/
+
+# Sensitive credentials & environment files
+*.env
+*.env.*
+*.key
+*.pem
+*.token
+*.secret
+credentials.json

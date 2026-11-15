@@ -1,0 +1,7 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/wrecked_ship.gd" id="1_wrecked_ship"]
+
+[node name="WreckedShip" type="Node2D"]
+script = ExtResource("1_wrecked_ship")
+
