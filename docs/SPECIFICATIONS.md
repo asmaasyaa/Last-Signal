@@ -209,7 +209,68 @@ The following mechanics are **NOT part of the approved Stage 1 design** and must
   - Equipment is NOT granted if the player dies in Level 3.
   - Satellite extraction from Level 2 is NOT required to obtain equipment.
   - **Deferred Mechanics:** Active twin-barrel shooting (12 shots/s, 1 dmg, left click) and deflector shield activation/absorption are strictly reserved for Milestone 4. No combat mechanics are activated in Milestone 3.
-- **End of Prototype:**
-  - Progression cleanly stops at the Level 3 completion screen.
-  - No active Level 4 advance button or prompt is displayed. Pressing `[R]` allows replaying Stage 1 from checkpoint.
+- **End of Prototype (Milestone 3 Historical Baseline):**
+  - In Milestone 3, progression stopped at Level 3. In Milestone 4, Level 3 completion prompts: `"Press [Space/Enter] to proceed to combat zone"` to advance to Level 4.
+
+---
+
+## 12. Stage 1 Level 4 Specifications (Milestone 4 Implemented)
+
+- **Mode & Duration:** 30 seconds survival and combat in fixed 1280x720 arcade mode.
+- **Level 3 to Level 4 Transition:**
+  - Surviving Level 3 awards the primary weapon and deflector shield.
+  - Pressing Space or Enter triggers `advance_to_next_level()`.
+  - Player HP persists exactly from Level 3 (no automatic heal).
+  - Acquired equipment (`primary_weapon_acquired = true`, `shield_acquired = true`) is preserved.
+  - Level 4 survival timer initializes to 30.0 seconds.
+  - Derelict wrecked spacecraft, remaining asteroids, and temporary contact cooldowns are cleanly cleared.
+- **Twin-Barrel Primary Weapon Mechanics:**
+  - **Firing Control:** Left Mouse Button continuous firing with delta-timed cooldown management.
+  - **Volley Rate:** 6.0 volleys per second (`volleys_per_second = 6.0`, interval $\approx 0.1667\text{s}$).
+  - **Output Density:** 2 projectiles per volley = 12 projectiles per second total.
+  - **Damage:** Exactly 1 damage per projectile hit.
+  - **Muzzle Geometry & Trajectory:**
+    - Dual muzzles separated laterally: Left muzzle at $-12\text{ px}$ lateral, $+24\text{ px}$ forward; Right muzzle at $+12\text{ px}$ lateral, $+24\text{ px}$ forward from ship center.
+    - Forward trajectory follows the player's facing direction at firing time (`forward = Vector2.UP.rotated(player.rotation)`).
+    - Trajectories are parallel (lateral separation maintained; no automatic cursor homing or converging spread).
+  - **Level Restrictions:** Weapon firing is strictly inoperable during Levels 1, 2, and 3. Firing activates only in Level 4 (or combat levels) when equipment is acquired.
+  - **Node Architecture (Milestone 2 Suite 8 Preservation):**
+    - `WeaponController` (`scripts/weapon_controller.gd`) is mounted to `Main` (NOT `Player`).
+    - `Player` contains NO weapon child nodes and NO `shoot()` or `fire()` methods.
+- **Projectile Physics & Lifecycle (`scenes/projectile.tscn`):**
+  - **Collision Layers:** Collision layer 4 (bitmask 4, Layer 3: Player Projectiles); Collision mask 2 (Layer 2: Asteroids).
+  - **Speed & Lifetime:** `speed = 750.0 px/s`, `lifetime = 2.5s`.
+  - **Despawn Bounds:** Safe deletion when crossing $X < -50$, $X > 1330$, $Y < -50$, or $Y > 770$.
+  - **Asteroid Collision & Damage:** On contact with an asteroid, deals 1 damage via `take_damage(1)`, emits `hit(target)`, and immediately despawns.
+  - **Double-Hit Protection:** `has_hit` boolean flag and deferred disabling of `monitoring` and `monitorable` prevents duplicate damage callbacks within the same frame.
+  - **Non-Hazard Immunity:** Projectiles cannot collide with or damage Player, Communication Satellite, or Wrecked Ships.
+- **Asteroid Multi-Hit Health & Destruction:**
+  - **Health Tiers:** Small Asteroid = 20 HP, Medium Asteroid = 40 HP, Large Asteroid = 80 HP.
+  - **Contact Damage:** Small = 1 damage, Medium = 2 damage, Large = 4 damage.
+  - **Damage Signals:** Taking damage emits `damaged(amount, remaining_health)`.
+  - **Destruction Mechanics:** Reaching 0 HP triggers `destroy()`:
+    - Sets `is_destroyed = true`.
+    - Immediately negates contact damage (`contact_damage = 0`).
+    - Disables collision shape deferred (`disabled = true`).
+    - Emits `destroyed()` signal and calls `queue_free()`.
+    - Ongoing physics movement and damage processing halt immediately upon destruction.
+- **Level 4 Asteroid Belt Density & Spawning (Provisional TBD):**
+  - Spawn interval range: `0.90s – 1.60s` (average ~1.25s = ~0.80 asteroids/s).
+  - Size distribution: 35% Small, 40% Medium, 25% Large.
+  - Speed ranges: Small (190–300 px/s), Medium (140–240 px/s), Large (90–170 px/s).
+  - Combat is optional: player may evade, shoot to carve paths, or combine tactics to survive 30 seconds.
+- **Deflector Shield Status:**
+  - Flag `shield_acquired = true` stored in `stage_acquisitions`.
+  - Active/passive shield mechanics (energy bar, absorption, activation hotkey) deferred as TBD.
+- **Stage Checkpoint & Revive:**
+  - Death in Level 4 calls `_on_player_died()` (weapon firing disabled, message prompts checkpoint revive).
+  - Revive returns strictly to **Stage 1 Level 1** at full 12 HP.
+  - Level timer resets to 30.0s.
+  - Stage acquisitions cleared (weapons and shield unacquired).
+  - Weapon firing disabled in Level 1; active projectiles cleared.
+- **Level 4 Completion & Prototype Boundary:**
+  - Surviving 30 seconds triggers Level 4 complete screen:
+    `"STAGE 1 / LEVEL 4 COMPLETE!\nAsteroid Combat Zone Cleared (HP: %02d/%02d)\nSatellite Extraction: %s\nPrimary Weapon: Twin-barrel Pulse Cannon (Active)\nShield: Deflector Shield Generator (Stored)\n\n[END OF PROTOTYPE — MILESTONE 4 COMPLETE]\nPress [R] to replay Stage 1 from Checkpoint"`
+  - Halts further progression cleanly (no Level 5 auto-advance).
+
 

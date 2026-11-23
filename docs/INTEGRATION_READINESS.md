@@ -120,3 +120,21 @@ Milestone 3.7 integrated the official Communication Satellite asset from Batch 0
    - 435 baseline tests across Milestones 1–3.6 pass with zero regressions.
 
 
+
+---
+
+## 7. Milestone 4 Projectile Visual Integration Readiness
+
+Milestone 4 introduces the reusable projectile system (`scenes/projectile.tscn`) for the twin-barrel primary pulse cannon, designed in full compliance with the `Visuals` subtree isolation pattern:
+
+1. **Projectile Visual Architecture (`scenes/projectile.tscn`):**
+   - **Root Node (`Area2D`):** Script `scripts/projectile.gd` manages collision detection, speed ($750\text{ px/s}$), damage ($1\text{ HP}$), boundary cleanup, and despawn lifecycle.
+   - **Collision Geometry:** `CapsuleShape2D` (radius $3.0\text{ px}$, height $14.0\text{ px}$) on Collision Layer 4 (bitmask 4, Layer 3: Player Projectiles) and Collision Mask 2 (Layer 2: Asteroids).
+   - **Presentation Layer (`Visuals` Node2D):** All rendering is strictly isolated within the `Visuals` child container.
+   - **Procedural Energy Bolt (`Visuals/ProceduralFallback`):** Script `scripts/projectile_visual.gd` draws a bright cyan/white pulse bolt with glowing aura (`_draw`):
+     - Outer glow: Capsule with radius $6\text{ px}$, height $18\text{ px}$ (`Color(0.2, 0.7, 1.0, 0.45)`).
+     - Inner core bolt: Capsule with radius $2.5\text{ px}$, height $12\text{ px}$ (`Color(0.85, 0.95, 1.0, 1.0)`).
+     - Forward tip spark: Circle with radius $2.0\text{ px}$ at leading edge.
+   - **Seamless Art Integration Ready:** When official blaster bolts or pulse effects are delivered, inserting `Visuals/OfficialArt/Sprite2D` or `AnimatedSprite2D` automatically suppresses the procedural fallback without altering projectile physics, speed, or collision checks.
+2. **Automated Verification Baseline:**
+   - 678 total automated tests across 7 test suites (Milestones 1, 2, 3, 3.5, 3.6, 3.7, 4) passing with 0 failures.

@@ -1,7 +1,10 @@
 extends Area2D
 ## Asteroid for Stage 1 (small, medium, and large sizes).
 ## Visual representation is decoupled into the child Visuals node.
-## Asteroid contact damage received from player is TBD and not implemented.
+## Asteroid health and damage mechanics implemented for Stage 1 Level 4 combat.
+
+signal damaged(amount: int, remaining_health: int)
+signal destroyed()
 
 enum AsteroidSize { SMALL, MEDIUM, LARGE }
 
@@ -12,6 +15,7 @@ enum AsteroidSize { SMALL, MEDIUM, LARGE }
 
 var health: int = 20
 var spin: float = 0.0
+var is_destroyed: bool = false
 
 const BASE_VERTICES := [
 	Vector2(-16, -10), Vector2(-4, -22), Vector2(13, -17),
@@ -91,10 +95,34 @@ func _update_visuals(visual_scale: float) -> void:
 
 
 func _physics_process(delta: float) -> void:
+	if is_destroyed:
+		return
 	position.y += speed * delta
 	rotation += spin * delta
 	if position.y > 780.0:
 		queue_free()
+
+
+func take_damage(amount: int) -> void:
+	if is_destroyed or amount <= 0:
+		return
+	var actual_damage: int = mini(amount, health)
+	health -= actual_damage
+	damaged.emit(actual_damage, health)
+	if health <= 0:
+		destroy()
+
+
+func destroy() -> void:
+	if is_destroyed:
+		return
+	is_destroyed = true
+	contact_damage = 0
+	var col_shape: CollisionShape2D = get_node_or_null("CollisionShape2D")
+	if is_instance_valid(col_shape):
+		col_shape.set_deferred("disabled", true)
+	destroyed.emit()
+	queue_free()
 
 
 func get_visuals_node() -> Node2D:

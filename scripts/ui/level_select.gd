@@ -1,7 +1,7 @@
 extends Control
 ## Level Select map for LAST SIGNAL.
 ## Only Stage 1 Level 1 may start a normal gameplay run from Level Select.
-## Stage 1 Levels 2-3 remain accessible through normal gameplay progression, not direct level selection.
+## Stage 1 Levels 2-4 remain accessible through normal gameplay progression, not direct level selection.
 ## All unimplemented/locked stages remain unavailable with clear status notifications.
 
 signal level_selected(stage: int, level: int)
@@ -65,6 +65,8 @@ func _show_locked_status(stage: int, level: int) -> void:
 	if stage == 1:
 		if level == 2 or level == 3:
 			set_status("Stage 1 Level %d: Accessible via gameplay progression from Level 1." % level)
+		elif level == 4:
+			set_status("Stage 1 Level 4 not yet implemented for direct launch (Accessible via gameplay progression from Level 1).")
 		else:
 			set_status("Stage 1 Level %d not yet implemented." % level)
 	else:

@@ -1,5 +1,5 @@
 extends Node2D
-## Stage 1 Coordinator: Manages Level 1, Level 2 & Level 3 30s arcade survival runs.
+## Stage 1 Coordinator: Manages Level 1, Level 2, Level 3 & Level 4 30s arcade survival/combat runs.
 ## Implements Call Down, Signal Up, HP persistence, and Stage 1 Checkpoint revive semantics.
 
 signal equipment_acquired(equipment_data: Dictionary)
@@ -42,6 +42,19 @@ const WRECKED_SHIP_SCENE: PackedScene = preload("res://scenes/wrecked_ship.tscn"
 @export var l3_speed_large_min: float = 90.0
 @export var l3_speed_large_max: float = 170.0
 
+# Level 4 parameters (Asteroid combat & twin-barrel firing) - PROPOSAL / TBD
+@export var l4_spawn_interval_min: float = 0.90
+@export var l4_spawn_interval_max: float = 1.60
+@export var l4_small_ratio: float = 0.35  # 35% Small
+@export var l4_medium_ratio: float = 0.40 # 40% Medium
+@export var l4_large_ratio: float = 0.25  # 25% Large
+@export var l4_speed_small_min: float = 190.0
+@export var l4_speed_small_max: float = 300.0
+@export var l4_speed_medium_min: float = 140.0
+@export var l4_speed_medium_max: float = 240.0
+@export var l4_speed_large_min: float = 90.0
+@export var l4_speed_large_max: float = 170.0
+
 # Milestone 1 backward compatibility exports
 @export var spawn_interval_min: float = 0.35
 @export var spawn_interval_max: float = 0.85
@@ -54,6 +67,8 @@ static var requested_start_level: int = 1
 @onready var player = $Player
 @onready var info: Label = $HUD/Info
 @onready var message: Label = $HUD/Message
+@onready var weapon_controller: Node = get_node_or_null("WeaponController")
+@onready var projectiles_container: Node = get_node_or_null("Projectiles")
 
 var time_remaining: float = 30.0
 var spawn_remaining: float = 0.7
@@ -89,6 +104,14 @@ func _ready() -> void:
 		message.visible = false
 
 	_setup_debug_overlay()
+	if not is_instance_valid(weapon_controller):
+		weapon_controller = get_node_or_null("WeaponController")
+	if not is_instance_valid(projectiles_container):
+		projectiles_container = get_node_or_null("Projectiles")
+	if is_instance_valid(weapon_controller):
+		var proj_parent: Node = projectiles_container if is_instance_valid(projectiles_container) else self
+		weapon_controller.setup(player, proj_parent)
+
 	if requested_start_level > 1:
 		current_level = requested_start_level
 		requested_start_level = 1
@@ -143,6 +166,9 @@ func _process(delta: float) -> void:
 		elif current_level == 3:
 			cur_min = l3_spawn_interval_min
 			cur_max = l3_spawn_interval_max
+		elif current_level == 4:
+			cur_min = l4_spawn_interval_min
+			cur_max = l4_spawn_interval_max
 		spawn_remaining = randf_range(cur_min, cur_max)
 
 	if time_remaining <= 0.0:
@@ -187,6 +213,18 @@ func _spawn_asteroid() -> void:
 		else:
 			rock.set_size_tier(rock.AsteroidSize.LARGE)
 			rock.speed = randf_range(l3_speed_large_min, l3_speed_large_max)
+	elif current_level == 4:
+		# Level 4: combat belt (small 35%, medium 40%, large 25%)
+		var roll: float = randf()
+		if roll < l4_small_ratio:
+			rock.set_size_tier(rock.AsteroidSize.SMALL)
+			rock.speed = randf_range(l4_speed_small_min, l4_speed_small_max)
+		elif roll < l4_small_ratio + l4_medium_ratio:
+			rock.set_size_tier(rock.AsteroidSize.MEDIUM)
+			rock.speed = randf_range(l4_speed_medium_min, l4_speed_medium_max)
+		else:
+			rock.set_size_tier(rock.AsteroidSize.LARGE)
+			rock.speed = randf_range(l4_speed_large_min, l4_speed_large_max)
 
 	add_child(rock)
 
@@ -212,8 +250,12 @@ func _on_satellite_extracted(payload: Dictionary) -> void:
 
 func _clear_spawned_entities() -> void:
 	for child in get_children():
-		if child.is_in_group("asteroids") or child.is_in_group("satellites") or child.is_in_group("wrecked_ships"):
+		if child.is_in_group("asteroids") or child.is_in_group("satellites") or child.is_in_group("wrecked_ships") or child.is_in_group("projectiles"):
 			child.queue_free()
+	if not is_instance_valid(weapon_controller):
+		weapon_controller = get_node_or_null("WeaponController")
+	if is_instance_valid(weapon_controller) and weapon_controller.has_method("clear_projectiles"):
+		weapon_controller.clear_projectiles()
 
 
 func start_level(target_level: int, starting_hp: int = -1) -> void:
@@ -226,14 +268,27 @@ func start_level(target_level: int, starting_hp: int = -1) -> void:
 	telemetry_notice = ""
 	telemetry_notice_timer = 0.0
 
+	if not is_instance_valid(weapon_controller):
+		weapon_controller = get_node_or_null("WeaponController")
+
 	if target_level == 1:
 		satellite_extracted = false
 		stage_acquisitions.clear()
 		spawn_remaining = 0.7
+		if is_instance_valid(weapon_controller):
+			weapon_controller.set_firing_enabled(false)
 	elif target_level == 2:
 		spawn_remaining = 1.0
+		if is_instance_valid(weapon_controller):
+			weapon_controller.set_firing_enabled(false)
 	elif target_level == 3:
 		spawn_remaining = 1.2
+		if is_instance_valid(weapon_controller):
+			weapon_controller.set_firing_enabled(false)
+	elif target_level == 4:
+		spawn_remaining = 1.0
+		if is_instance_valid(weapon_controller):
+			weapon_controller.set_firing_enabled(is_primary_weapon_acquired())
 
 	_clear_spawned_entities()
 
@@ -258,11 +313,18 @@ func advance_to_next_level() -> void:
 			start_level(2, persistent_hp)
 		elif current_level == 2:
 			start_level(3, persistent_hp)
+		elif current_level == 3:
+			start_level(4, persistent_hp)
 
 
 func revive_at_stage_checkpoint() -> void:
 	stage_acquisitions.clear()
 	satellite_extracted = false
+	if not is_instance_valid(weapon_controller):
+		weapon_controller = get_node_or_null("WeaponController")
+	if is_instance_valid(weapon_controller):
+		weapon_controller.set_firing_enabled(false)
+		weapon_controller.clear_projectiles()
 	start_level(stage_checkpoint_level, 12)
 
 
@@ -312,7 +374,7 @@ func _update_debug_overlay() -> void:
 	var mouse_pos: Vector2 = player.get_global_mouse_position()
 	var dist_to_mouse: float = (mouse_pos - player.global_position).length()
 	var sat_status: String = "EXTRACTED" if satellite_extracted else ("ACTIVE" if is_instance_valid(active_satellite) else ("PENDING" if not satellite_spawned else "MISSED"))
-	var wep_status: String = "YES" if is_primary_weapon_acquired() else "NO"
+	var wep_status: String = "ACTIVE" if (is_primary_weapon_acquired() and current_level == 4) else ("ACQUIRED" if is_primary_weapon_acquired() else "NO")
 	var shd_status: String = "YES" if is_shield_acquired() else "NO"
 
 	debug_label.text = "[DEBUG OVERLAY — F3 to toggle]\nStage: %d | Level: %d | Level Duration: %.1fs\nHP: %02d / %02d (Persisted across levels)\nSpeed: %5.1f px/s (Threshold: %.1f px/s | Deadzone: %.1f px)\nStationary Duration: %4.2f s (Wait Required: %.1f s)\nRegen Progress: %5.1f%% (+%.1f HP/s) | State: %s\nDistance to Mouse: %5.2f px\nSatellite Status: %s (Optional) | Weapon: %s | Shield: %s" % [
@@ -331,6 +393,10 @@ func _on_player_died() -> void:
 	game_won = false
 	if is_instance_valid(player):
 		player.set_physics_process(false)
+	if not is_instance_valid(weapon_controller):
+		weapon_controller = get_node_or_null("WeaponController")
+	if is_instance_valid(weapon_controller):
+		weapon_controller.set_firing_enabled(false)
 	if is_instance_valid(message):
 		message.visible = true
 		if current_level == 1:
@@ -378,7 +444,17 @@ func _complete_level() -> void:
 				add_child(wreck)
 
 			var sat_str := "SUCCESS (Telemetry Recovered)" if satellite_extracted else "MISSED (Satellite Drifted Away)"
-			message.text = "STAGE 1 / LEVEL 3 COMPLETE!\nDeep Asteroid Belt Cleared (HP: %02d/%02d)\nSatellite Extraction: %s\n\n[DERELICT ENCOUNTERED: Wrecked Scout Craft]\n[EQUIPMENT RECOVERED]\n* Twin-barrel Pulse Cannon (Primary Weapon)\n* Deflector Shield Generator\n(Hardware secured for future deployment)\n\n[END OF PROTOTYPE — MILESTONE 3 COMPLETE]\nPress [R] to replay Stage 1 from Checkpoint" % [
+			message.text = "STAGE 1 / LEVEL 3 COMPLETE!\nDeep Asteroid Belt Cleared (HP: %02d/%02d)\nSatellite Extraction: %s\n\n[DERELICT ENCOUNTERED: Wrecked Scout Craft]\n[EQUIPMENT RECOVERED]\n* Twin-barrel Pulse Cannon (Primary Weapon)\n* Deflector Shield Generator\n(Hardware secured for combat deployment)\n\nPress [Space/Enter] to proceed to combat zone\n[END OF PROTOTYPE]\nPress [R] to replay Stage 1 from Checkpoint" % [
+				player.health, player.max_health, sat_str
+			]
+		elif current_level == 4:
+			if not is_instance_valid(weapon_controller):
+				weapon_controller = get_node_or_null("WeaponController")
+			if is_instance_valid(weapon_controller):
+				weapon_controller.set_firing_enabled(false)
+			_clear_spawned_entities()
+			var sat_str := "SUCCESS (Telemetry Recovered)" if satellite_extracted else "MISSED (Satellite Drifted Away)"
+			message.text = "STAGE 1 / LEVEL 4 COMPLETE!\nAsteroid Combat Zone Cleared (HP: %02d/%02d)\nSatellite Extraction: %s\nPrimary Weapon: Twin-barrel Pulse Cannon (Active)\nShield: Deflector Shield Generator (Stored)\n\n[END OF PROTOTYPE — MILESTONE 4 COMPLETE]\nPress [R] to replay Stage 1 from Checkpoint" % [
 				player.health, player.max_health, sat_str
 			]
 	_update_debug_overlay()
@@ -397,7 +473,7 @@ func _unhandled_key_input(event: InputEvent) -> void:
 			else:
 				revive_at_stage_checkpoint()
 		elif event.keycode == KEY_SPACE or event.keycode == KEY_ENTER:
-			if finished and game_won and (current_level == 1 or current_level == 2):
+			if finished and game_won and (current_level >= 1 and current_level <= 3):
 				advance_to_next_level()
 		elif event.keycode == KEY_ESCAPE:
 			get_tree().quit()

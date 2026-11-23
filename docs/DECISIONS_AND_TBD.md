@@ -114,3 +114,27 @@ This document tracks unresolved balance parameters, provisional features, and pe
 - **Status:** **Configurable / Subject to Lead Review during playtesting.**
 
 
+
+---
+
+## 10. Milestone 4 Level 4 Configurable Parameters & Combat TBDs
+
+- **Mechanic Overview:** Stage 1 Level 4 introduces active twin-barrel shooting and multi-hit asteroid destruction while maintaining 30s arcade survival rules, HP persistence from Level 3, and Stage 1 checkpoint revive.
+- **Configurable Parameters in Code (`scripts/main.gd` & `scripts/weapon_controller.gd`):**
+  1. **Level 4 Asteroid Density:** `@export var l4_spawn_interval_min: float = 0.90`, `@export var l4_spawn_interval_max: float = 1.60` (provisional average interval 1.25s, ~0.80 asteroids/s; calibrated for active shooting flow).
+  2. **Level 4 Asteroid Mix:** `@export var l4_small_ratio: float = 0.35` (35% Small), `@export var l4_medium_ratio: float = 0.40` (40% Medium), `@export var l4_large_ratio: float = 0.25` (25% Large).
+  3. **Weapon Controller Tuning:**
+     - `@export var volleys_per_second: float = 6.0` (6 volleys/s = 12 projectiles/s).
+     - `@export var projectile_damage: int = 1` (1 HP per projectile).
+     - `@export var projectile_speed: float = 750.0` px/s.
+     - `@export var muzzle_offset_lateral: float = 12.0` px.
+     - `@export var muzzle_offset_forward: float = 24.0` px.
+  4. **Projectile Lifetime & Bounds:** `@export var lifetime: float = 2.5` seconds, bounded by playfield margins ($[-50, 1330]$ X, $[-50, 770]$ Y).
+  5. **Deflector Shield System (Deferred TBD):**
+     - Shield hardware acquired at Level 3 and stored in `stage_acquisitions["shield_acquired"] = true`.
+     - Active/passive shield behavior (e.g., energy bar, passive hit absorption, or active toggle key) is deferred to future milestones.
+  6. **Explicitly Excluded Systems (Preserved Boundaries):**
+     - No ammunition limits, reloads, weapon overheating, recoil physics, or critical hits.
+     - No secondary weapons (missiles, bombs, EM jammers).
+     - No asteroid item drops or arcade scoring counters.
+- **Status:** **Configurable Baseline / Subject to Lead Playtesting.**

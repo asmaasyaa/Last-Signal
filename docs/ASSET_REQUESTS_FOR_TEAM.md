@@ -61,7 +61,7 @@ To complete visual fidelity for currently implemented gameplay (Stage 1 Levels 1
 | **Medium Asteroid** | 2 variants | $96 \times 96\text{ px}$ | `CircleShape2D` ($r = 35.0\text{px}$) | Cratered rock profile; runtime spin applied. Inscribes in $r=35$ circle. | UNASSIGNED / TEAM TO CONFIRM |
 | **Large Asteroid** | 1–2 variants | $160 \times 160\text{ px}$ | `CircleShape2D` ($r = 65.0\text{px}$) | Heavy hazardous rock body; runtime spin applied. Inscribes in $r=65$ circle. | UNASSIGNED / TEAM TO CONFIRM |
 | **Wrecked Scout Craft (Confirmed)** | 1 sprite (or Nirawak 1 confirmation) | $160 \times 128\text{ px}$ | Visual entity (N/A) | Derelict vessel floating in space at Level 3 completion. | UNASSIGNED / TEAM TO CONFIRM |
-| **Twin-Barrel Projectile Sprites** | 1 sprite | $32 \times 64\text{ px}$ | Capsule or ray ($r = 4\text{px}$) | Blaster bolts facing North ($-Y$) for Milestone 4 shooting mechanics. | UNASSIGNED / TEAM TO CONFIRM |
+| **Twin-Barrel Projectile Sprites** | 1 sprite | $32 \times 64\text{ px}$ | Capsule or ray ($r = 3\text{px}, h=14\text{px}$) | Blaster bolts facing North ($-Y$) for Level 4 pulse cannon. Procedural glowing fallback active. | UNASSIGNED / TEAM TO CONFIRM |
 
 ### Priority P1 — UI Polish & Feedback
 
