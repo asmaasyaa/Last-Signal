@@ -1,6 +1,9 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=6 format=3]
 
 [ext_resource type="Script" path="res://scripts/satellite.gd" id="1_satellite"]
+[ext_resource type="Script" path="res://scripts/satellite_visual.gd" id="2_sat_vis"]
+[ext_resource type="Texture2D" path="res://assets/sprites/interactables/commsatt.png" id="3_commsatt"]
+[ext_resource type="Script" path="res://scripts/satellite_indicator.gd" id="4_sat_ind"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_satellite"]
 radius = 80.0
@@ -13,3 +16,17 @@ script = ExtResource("1_satellite")
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 shape = SubResource("CircleShape2D_satellite")
 
+[node name="Visuals" type="Node2D" parent="."]
+
+[node name="ProceduralFallback" type="Node2D" parent="Visuals"]
+script = ExtResource("2_sat_vis")
+
+[node name="OfficialArt" type="Node2D" parent="Visuals"]
+
+[node name="Sprite2D" type="Sprite2D" parent="Visuals/OfficialArt"]
+scale = Vector2(0.22, 0.22)
+texture = ExtResource("3_commsatt")
+
+[node name="Indicator" type="Node2D" parent="."]
+z_index = 2
+script = ExtResource("4_sat_ind")

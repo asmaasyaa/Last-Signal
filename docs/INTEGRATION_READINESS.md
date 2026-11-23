@@ -95,7 +95,28 @@ Milestone 3.6 successfully integrated the first delivery of official team visual
    - Milestone 2: 73/73 tests passed
    - Milestone 3: 81/81 tests passed
    - Milestone 3.5: 56/56 tests passed
-   - Milestone 3.6: 131/131 tests passed
-   - **Total:** 428 passing tests across all test suites with 0 regressions.
+   - Milestone 3.6: 138/138 tests passed
+   - **Total:** 435 passing tests across all test suites with 0 regressions.
+
+---
+
+## 6. Milestone 3.7 Implementation Results (Batch 02 Art Integration)
+
+Milestone 3.7 integrated the official Communication Satellite asset from Batch 02 while maintaining all previously accepted gameplay systems:
+
+1. **Communication Satellite Official Art Integration:**
+   - Integrated `commsatt.png` ($602 \times 336\text{px}$) into `scenes/satellite.tscn` under `Visuals/OfficialArt/Sprite2D`.
+   - Scaled visually to $0.22 \times 0.22$ ($\approx 132.4 \times 73.9\text{px}$) inside the visual subtree, preserving the $80.0\text{px}$ proximity detection radius (`CircleShape2D`) and keeping root `scale = Vector2.ONE`.
+   - Proximity radius arc and dual extraction progress rings render on an overlay `Indicator` node ($z=2$) above the sprite, ensuring extraction feedback remains crisp and unobstructed.
+   - Procedural vector fallback is encapsulated in `Visuals/ProceduralFallback` (`scripts/satellite_visual.gd`) and reactivates automatically if official art is disabled or texture is missing.
+   - All Stage 1 Level 2 gameplay mechanics preserved: drift speed $100.0\text{ px/s}$, extraction accumulation time $1.8\text{s}$, decrypted telemetry payload emission, and strict level completion independence (satellite remains fully optional).
+2. **Stage 2 Guard Assets Staged & Reserved:**
+   - Imported 6 guard enemy sprites (Bot, Satellite, Drone in both idle and attacking states) into `res://assets/sprites/enemies/`.
+   - Explicitly reserved for Stage 2 without creating premature AI, attacks, or combat systems.
+3. **Nirawak 1 Assets Staged Without Assumptions:**
+   - Staged `before_extraction.png` and `after_extraction.png` in `res://assets/sprites/npc/nirawak1/`.
+   - Documented as AWAITING TEAM CONFIRMATION regarding narrative event and level mapping; existing Level 3 wrecked spacecraft visuals remain unaffected.
+4. **Regression Immunity:**
+   - 435 baseline tests across Milestones 1–3.6 pass with zero regressions.
 
 

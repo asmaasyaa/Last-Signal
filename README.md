@@ -1,7 +1,7 @@
-# LAST SIGNAL - Godot Prototype (Milestone 3.6 — Team Asset Integration Batch 01)
+# LAST SIGNAL - Godot Prototype (Milestone 3.7 — Team Asset Integration Batch 02)
 
-> **Development Status:** WIP — Milestone 3.6 implemented, manual GUI QA pending.  
-> A verified 2D space SHMUP prototype in Godot 4.7.2 featuring Stage 1 Levels 1–3, official team art integration, modular menu UI, and 435 automated regression tests.
+> **Development Status:** WIP — Milestone 3.7 implemented, manual GUI QA pending.  
+> A verified 2D space SHMUP prototype in Godot 4.7.2 featuring Stage 1 Levels 1–3, official team art integration (Batch 01 & Batch 02), communication satellite visual integration, modular menu UI, and comprehensive automated regression tests.
 
 ## Setup
 
@@ -11,13 +11,17 @@
 4. Press **F6** from `scenes/main.tscn` (direct gameplay) or `scenes/ui/main_menu.tscn` (menu flow), or **F5** to start.
 5. Move the mouse to steer the ship. Stay alive for 30 seconds. Press **R** to restart, **Esc** to quit.
 
-## Current Prototype Implementation Status (Milestone 3.6)
+## Current Prototype Implementation Status (Milestone 3.7)
 
 - **Stage 1 Levels 1–3:** Fully implemented 30-second arcade survival gameplay with HP persistence across levels, stage checkpoint revive, optional satellite extraction in Level 2, and weapon/shield recovery in Level 3.
-- **Official Team Art (Batch 01):** Player ship (`alive.png`, `dead.png`) integrated into `player.tscn` with dynamic state switching; modular Main Menu and Level Select UI integrated using official team button textures.
+- **Official Team Art (Batch 01 & Batch 02):**
+  - **Player Ship:** `player_alive.png` and `player_dead.png` integrated into `player.tscn` with dynamic state switching.
+  - **Communication Satellite:** Official `commsatt.png` integrated into `satellite.tscn` under `Visuals/OfficialArt/Sprite2D` with dual progress indicator rings above the sprite and procedural fallback.
+  - **Modular UI:** Main Menu and Level Select UI integrated using official team button textures with progression gating.
+  - **Staged & Reserved Assets:** 6 Stage 2 guard enemy sprites, 3 Stage 2 mini-boss sprites, 11 Stage 3 boss sprites, and overheat label cataloged and reserved for future milestones.
+  - **Awaiting Confirmation:** Nirawak 1 (`before-extraction.png` / `after-extraction.png`) staged without narrative assumptions.
 - **Safe Fallback Architecture:** Procedural vector drawing serves as an automatic fallback whenever custom art is missing or disabled.
-- **Staged Assets:** Stage 2 mini-boss, Stage 3 boss components, and overheat label are imported and cataloged for future milestones without premature mechanics.
-- Only small asteroids appear; 1 damage per contact tick (0.5s).
+- Only small asteroids appear in Level 1; medium asteroids appear in Level 2; large asteroids appear in Level 3.
 - Player starts at 12 HP. A provisional 2-second stationary regen delay is exposed as `regen_wait` and must be confirmed by the lead.
 - Side-scrolling, boss, shield, EM jammer and progression system **are not included yet**.
 - Stars move to suggest forward motion while the gameplay camera doesn't follow the player.
@@ -36,10 +40,14 @@ docs/
   TEAM_ASSET_MANIFEST.md
   ASSET_REQUESTS_FOR_TEAM.md
 assets_src/
-  team_batch_01/               # Pristine, untouched original team art archive
+  team_batch_01/               # Pristine Batch 01 art archive (35 files)
+  team_batch_02/               # Pristine Batch 02 art archive (44 files)
 assets/
   sprites/
     player/                    # Official player sprites (alive, dead)
+    interactables/             # Communication satellite (commsatt.png)
+    enemies/                   # Stage 2 guard assets (bot, satellite, drone - reserved)
+    npc/                       # Nirawak 1 assets (awaiting confirmation)
     bosses/
       stage2_miniboss/         # Stage 2 mini-boss assets (reserved)
       stage3_boss/             # Stage 3 multi-part boss assets (reserved)
@@ -61,6 +69,8 @@ scripts/
   asteroid.gd
   asteroid_visual.gd
   satellite.gd
+  satellite_visual.gd
+  satellite_indicator.gd
   wrecked_ship.gd
   ui/
     main_menu.gd
@@ -76,6 +86,8 @@ tests/
   test_runner_milestone3_5.gd
   test_milestone3_6.gd
   test_runner_milestone3_6.gd
+  test_milestone3_7.gd
+  test_runner_milestone3_7.gd
 project.godot
 README.md
 .gitignore
@@ -97,6 +109,15 @@ godot --headless -s tests/test_milestone3.gd
 
 # Milestone 3.5 verification suite (56 tests)
 godot --headless -s tests/test_milestone3_5.gd
+
+# Milestone 3.6 verification suite (138 tests)
+godot --headless -s tests/test_milestone3_6.gd
+
+# Milestone 3.7 verification suite (119 tests)
+godot --headless -s tests/test_milestone3_7.gd
+```
+Total baseline: **554 passing tests** across 6 test suites (0 failures).
+
 
 # Milestone 3.6 verification suite (138 tests)
 godot --headless -s tests/test_milestone3_6.gd
