@@ -1,0 +1,45 @@
+[gd_scene load_steps=7 format=3]
+
+[ext_resource type="Script" path="res://scripts/bosses/guard_cruiser.gd" id="1_boss"]
+[ext_resource type="Texture2D" path="res://assets/sprites/bosses/stage2_miniboss/miniboss_alive_p1.png" id="2_p1"]
+[ext_resource type="Texture2D" path="res://assets/sprites/bosses/stage2_miniboss/miniboss_alive_p2.png" id="3_p2"]
+[ext_resource type="Texture2D" path="res://assets/sprites/bosses/stage2_miniboss/miniboss_dead.png" id="4_dead"]
+[ext_resource type="Script" path="res://scripts/bosses/guard_cruiser_visual.gd" id="5_visual"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_cruiser"]
+size = Vector2(230, 110)
+
+[node name="GuardCruiser" type="Area2D"]
+collision_layer = 18
+collision_mask = 5
+script = ExtResource("1_boss")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("RectangleShape2D_cruiser")
+
+[node name="Visuals" type="Node2D" parent="."]
+
+[node name="ProceduralFallback" type="Node2D" parent="Visuals"]
+script = ExtResource("5_visual")
+
+[node name="OfficialArt" type="Node2D" parent="Visuals"]
+
+[node name="Phase1Sprite" type="Sprite2D" parent="Visuals/OfficialArt"]
+rotation = 3.14159
+scale = Vector2(0.4, 0.4)
+texture = ExtResource("2_p1")
+centered = true
+
+[node name="Phase2Sprite" type="Sprite2D" parent="Visuals/OfficialArt"]
+visible = false
+rotation = 3.14159
+scale = Vector2(0.4, 0.4)
+texture = ExtResource("3_p2")
+centered = true
+
+[node name="DeadSprite" type="Sprite2D" parent="Visuals/OfficialArt"]
+visible = false
+rotation = 3.14159
+scale = Vector2(0.4, 0.4)
+texture = ExtResource("4_dead")
+centered = true

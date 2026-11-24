@@ -14,6 +14,7 @@ const GUARD_BOT_SCENE = preload("res://scenes/enemies/guard_bot.tscn")
 const GUARD_SATELLITE_SCENE = preload("res://scenes/enemies/guard_satellite.tscn")
 const GUARD_DRONE_SCENE = preload("res://scenes/enemies/guard_drone.tscn")
 const PROJECTILE_SCENE = preload("res://scenes/projectile.tscn")
+const BOSS_ARENA_SCENE = preload("res://scenes/stage2/boss_arena.tscn")
 
 @export var stage_number: int = 2
 @export var current_level: int = 1
@@ -313,17 +314,35 @@ func start_level(target_level: int, starting_hp: int = 12) -> void:
 	_update_debug_overlay()
 
 
-func advance_to_next_level() -> void:
+func advance_to_next_level() -> Variant:
 	if not (finished and game_won):
-		return
+		return null
 
 	# Preserve remaining player HP when progressing within Stage 2!
 	var preserved_hp: int = player.health if is_instance_valid(player) else 12
 
 	if current_level == 1:
 		start_level(2, preserved_hp)
+		return null
 	elif current_level == 2:
 		start_level(3, preserved_hp)
+		return null
+	elif current_level == 3:
+		var arena = BOSS_ARENA_SCENE.instantiate()
+		var stage_data: Dictionary = {
+			"health": preserved_hp,
+			"primary_weapon_acquired": is_primary_weapon_acquired(),
+			"shield_acquired": is_shield_acquired(),
+			"em_jammer_acquired": is_em_jammer_acquired(),
+			"stage_number": 2,
+			"current_level": 4
+		}
+		if arena.has_method("initialize_from_stage2_level3"):
+			arena.initialize_from_stage2_level3(stage_data)
+		if is_inside_tree() and get_tree().current_scene == self:
+			get_tree().change_scene_to_file("res://scenes/stage2/boss_arena.tscn")
+		return arena
+	return null
 
 
 func revive_at_stage_checkpoint() -> void:
@@ -386,7 +405,7 @@ func _complete_level() -> void:
 				player.health, player.max_health
 			]
 		elif current_level == 3:
-			message.text = "STAGE 2 / LEVEL 3 COMPLETE!\nGuard Drone Interceptors Neutralized (%d/%d)\n[EQUIPMENT RECOVERED: EM Jammer]\n\n[STAGE 2 LEVEL 3 COMPLETE — PROTOTYPE FINISHED]\nPress [R] to replay Stage 2 from Checkpoint" % [
+			message.text = "STAGE 2 / LEVEL 3 COMPLETE!\nGuard Drone Interceptors Neutralized (%d/%d)\n[EQUIPMENT RECOVERED: EM Jammer]\n\nPress [Space/Enter] for Level 4\n[STAGE 2 LEVEL 3 COMPLETE — PROTOTYPE FINISHED]\nPress [R] to replay Stage 2 from Checkpoint" % [
 				drones_destroyed, target_kills
 			]
 
@@ -449,7 +468,7 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		elif event.keycode == KEY_R or event.physical_keycode == KEY_R:
 			revive_at_stage_checkpoint()
 		elif event.keycode == KEY_SPACE or event.keycode == KEY_ENTER:
-			if finished and game_won and (current_level == 1 or current_level == 2):
+			if finished and game_won and (current_level == 1 or current_level == 2 or current_level == 3):
 				advance_to_next_level()
 		elif event.keycode == KEY_ESCAPE:
 			get_tree().quit()

@@ -500,5 +500,78 @@ The following mechanics are **NOT part of the approved Stage 1 design** and must
   - `drones_destroyed` is reset to 0.
   - Reviving in Stage 2 does **NOT** reset the player to Stage 1.
 - **Milestone Scope Boundary:**
-  - Completing Level 3 finishes the currently authorized prototype.
-  - Stage 2 Level 4 cannot start; no Level 4 gameplay is implemented.
+  - Completing Level 3 displays completion banner prompting [Space/Enter] for Level 4.
+
+---
+
+## 17. Milestone 9: Stage 2 Level 4 — Guard Cruiser Mini-Boss Phase 1 & EM Jammer Activation
+
+- **Arena Architecture & Transition from Side-Scrolling (`scenes/stage2/boss_arena.tscn` / `scripts/stage2/boss_arena.gd`):**
+  - **Arcade Arena Layout:** Transitions from horizontal side-scrolling to a fixed $1280 \times 720\text{ px}$ arcade boss arena. Starfield drifts gently downward at $25.0\text{ px/s}$, centering visual focus on the mini-boss encounter.
+  - **Player Spawn:** Player spawns centered in the lower sector at $(640.0, 560.0)\text{ px}$, free to maneuver with standard mouse steering within $(24.0, 24.0)$ to $(1256.0, 696.0)\text{ px}$.
+  - **HUD Information Display:**
+    - Player Status: `STAGE 2 / LEVEL 4     HP %02d / %02d`
+    - Boss HP Bar: `GUARD CRUISER: %03d / 400 HP`
+    - EM Jammer Status: `EM JAMMER: READY [E]` (cyan) when charged, or `EM JAMMER: COOLING (%.1fs)` (amber) during cooldown.
+- **Level 3 to Level 4 Progression & State Persistence:**
+  - Pressing [Space/Enter] after completing Level 3 triggers `advance_to_next_level()`.
+  - **Strict HP Persistence:** Remaining player HP from Level 3 is strictly preserved into Level 4 (no intra-stage restoration).
+  - **Equipment Retention:** Primary twin-barrel blasters ($6\text{ volleys/s}$, $12\text{ shots/s}$, $1\text{ dmg}$), deflector shield hardware, and the EM Jammer acquired at the end of Level 3 persist into Level 4.
+  - **Entity Cleanup:** Old side-scrolling drones, projectiles, and hazards are cleared cleanly.
+- **Guard Cruiser Mini-Boss Entity (`scenes/bosses/guard_cruiser.tscn` / `scripts/bosses/guard_cruiser.gd`):**
+  - **HP & Multi-Hit Health System:** Total health is $400\text{ HP}$ (`max_health = 400`). Takes 1 damage per player projectile hit, emitting `health_changed(current, max_health)`.
+  - **Phase 1 Damage Clamping (400 to 200 HP):**
+    - Phase 1 encompasses the health range from $400\text{ HP}$ down to $200\text{ HP}$.
+    - Crossing the threshold at $200\text{ HP}$ emits `phase_threshold_reached(1)` exactly once and sets `phase_1_completed = true`.
+    - `can_take_damage` is set to `false`, and any subsequent hits are strictly clamped at $200\text{ HP}$.
+    - Boss is **NOT destroyed** and **NOT defeated** (`is_destroyed = false`, `defeated` signal reserved for Phase 2 in a future milestone).
+  - **Collision Layers & Geometry:**
+    - Collision Layer 18 (Layer 2 `[2]` Combat Target | Layer 5 `[16]` Enemies), Collision Mask 5 (Layer 1 `[1]` Player | Layer 3 `[4]` Player Projectiles).
+    - Neutral root scale `Vector2.ONE`. Central hull hitbox is a `RectangleShape2D(230.0, 110.0)`.
+  - **Official Artwork Integration:**
+    - Integrated official `assets/sprites/bosses/stage2_miniboss/miniboss_alive_p1.png` ($601 \times 321\text{ px}$) under `Visuals/OfficialArt/Phase1Sprite`.
+    - Scaled visually to $0.4 \times 0.4$ ($\approx 240.4 \times 128.4\text{ px}$) and rotated $\pi$ ($180^\circ$) so the capital ship's heavy prow faces South toward the player.
+    - Official sprites `miniboss_alive_p2.png` and `miniboss_dead.png` are staged under `Visuals/OfficialArt/Phase2Sprite` and `Visuals/OfficialArt/DeadSprite`, strictly hidden and reserved for Phase 2 and defeat in future milestones.
+    - Procedural battlecruiser fallback in `Visuals/ProceduralFallback` (`scripts/bosses/guard_cruiser_visual.gd`) with dual warp nacelles, reinforced command bridge, and dynamic electrical stun arc overlays.
+  - **Movement & Sweeps:** Patrols horizontally in the upper sector ($Y = 150.0\text{ px}$) between $X = 220.0\text{ px}$ and $X = 1060.0\text{ px}$ at $85.0\text{ px/s}$ (`move_speed = 85.0`). Reversing direction upon reaching sector turnaround limits.
+  - **Controlled Burst Attacks:**
+    - Fires controlled 3-projectile aimed bursts (`burst_count = 3`) every $2.6\text{s}$ (`attack_interval = 2.6`).
+    - **Windup Warning ($0.5\text{s}$):** Enters `WINDUP` state, displaying charging electrical hull glow.
+    - **Firing:** Emits 3 energy bolts along the player's vector with a narrow $12^\circ$ spread ($300.0\text{ px/s}$, Layer 32 Enemy Projectiles, Mask 1 Player). Each bolt deals $1\text{ HP}$ damage on player impact.
+    - **Dodgeable:** Firing direction locks at windup initiation; player can evade laterally.
+    - **Friendly Fire & Self-Damage Immunity:** Mask 1 ensures enemy projectiles never damage the boss or other enemies.
+- **EM Jammer Active Equipment System (`scripts/equipment/em_jammer_controller.gd`):**
+  - **Input Activation:** Action `em_jammer` mapped to physical key `E` (with provisional direct key fallback).
+  - **Directional Cone Geometry ($120^\circ$ Cone):**
+    - Evaluates targets within a full $120^\circ$ sector ($\pm 60^\circ$ from player's forward facing heading `Vector2.UP.rotated(player.rotation)`).
+    - Maximum effective range is $600.0\text{ px}$ (`cone_range = 600.0`).
+    - Targets within range and inside the $\pm 60^\circ$ angular delta are affected: `absf(heading.angle_to(to_enemy.normalized())) <= deg_to_rad(60.0)`.
+  - **Non-Damaging Stun Effect ($10.0\text{s}$ Duration):**
+    - Calls `apply_stun(10.0)` on all affected enemy targets.
+    - **Zero Damage Guarantee:** Strictly inflicts 0 damage to boss or enemies.
+    - Halts boss patrol movement (`is_stunned = true`) and cancels any ongoing attack or windup.
+    - Boss remains fully vulnerable to player blasters during the stunned state.
+    - Boss resumes movement and combat timers smoothly after 10.0 seconds expire (`stun_ended` signal).
+  - **Cooldown Lifecycle ($30.0\text{s}$ Cooldown):**
+    - Successful activation triggers a $30.0\text{s}$ cooldown timer (`cooldown_duration = 30.0`).
+    - Duplicate activations are rejected while cooling down.
+    - Emits `cooldown_started(30.0)` and `cooldown_finished` upon completion.
+  - **Visual Feedback:** Renders an expanding arc pulse wave (`_draw`) in cyan/electric blue for $0.35\text{s}$ along the activation heading.
+- **Phase 1 Completion Banner:**
+  - Upon reaching $200\text{ HP}$, the level finishes with `finished = true`, `game_won = true`, player weapons disabled, and displays the banner:
+    ```
+    STAGE 2 / LEVEL 4 COMPLETE
+    GUARD CRUISER — PHASE 1 DISABLED
+    BOSS HP: 200 / 400
+    [PHASE 2 — NEXT MILESTONE]
+    Press [R] to replay Stage 2 from Checkpoint
+    ```
+- **Stage 2 Checkpoint & Revival Semantics:**
+  - Player death in Level 4 halts physics and displays:
+    `SHIP DESTROYED (STAGE 2 / LEVEL 4)\nPress [R] to Revive at Stage 2 Checkpoint`
+  - Pressing [R] invokes `revive_at_stage_checkpoint()`, reviving strictly at **Stage 2 Level 1** at full $12\text{ HP}$ with primary weapon and shield retained.
+  - Unearned EM Jammer is cleared on revive.
+  - Reviving in Stage 2 does **NOT** reset the player to Stage 1.
+- **Milestone Scope Boundary:**
+  - Milestone 9 is strictly limited to Phase 1 of the Guard Cruiser encounter.
+  - Phase 2 combat patterns, Phase 2 sprites, boss destruction, and Stage 2 Level 5 are strictly deferred to future milestones.

@@ -85,10 +85,12 @@ To complete visual fidelity for currently implemented gameplay (Stage 1 Levels 1
 
 ---
 
-## 4. Delivery & Technical Guidelines for Artists
+## 5. Milestone 9 Asset Integration Status & Feedback
 
-1. **File Format:** All raster graphics must be exported as **PNG with 8-bit alpha transparency (RGBA8888)**.
-2. **Directional Art:** All spaceships, turrets, and projectiles must be drawn facing **UP (North / $-Y$ axis)**.
-3. **Pivots & Centering:** Ensure the visual center of mass is centered in the canvas so it matches collision circles automatically.
-4. **No Canvas Padding:** Trim excess transparent pixels tightly around buttons and icons.
-5. **Color Profile:** Use standard sRGB color space.
+1. **Stage 2 Mini-Boss Phase 1 Sprite (`miniboss_alive_p1.png`):**
+   - Successfully integrated in `scenes/bosses/guard_cruiser.tscn` scaled $0.4\times$ and rotated $\pi$ ($180^\circ$) to face South toward the player in the arcade arena.
+   - P2 animated variant (`miniboss_alive_p2.png`) and defeat sprite (`miniboss_dead.png`) remain staged and reserved for Milestone 10 (Phase 2 & Boss Defeat).
+2. **Audio SFX Requests for Boss Combat (Priority P1):**
+   - **EM Jammer Pulse SFX:** High-tech electromagnetic surge/EMP discharge sound ($\approx 0.5\text{–}1.0\text{s}$).
+   - **Cruiser Plasma Burst SFX:** Heavy energy cannon volley shot ($\approx 0.3\text{–}0.5\text{s}$).
+   - **Electrical Stun Loop:** Low buzzing/crackling electrical loop for stunned capital ship ($\approx 2.0\text{s}$ seamless loop).

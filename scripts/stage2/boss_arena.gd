@@ -1,0 +1,327 @@
+extends Node2D
+## Boss Arena Coordinator for LAST SIGNAL (Stage 2 Level 4: Guard Cruiser Mini-Boss Phase 1 & EM Jammer Activation).
+## Implements fixed 1280x720 arcade arena, Guard Cruiser mini-boss combat (400 -> 200 HP threshold),
+## EM Jammer active equipment integration, HP persistence from Level 3, Stage 2 checkpoint restart,
+## and Call Down / Signal Up architecture.
+
+signal level_completed(level: int)
+signal phase_1_completed
+
+const GUARD_CRUISER_SCENE = preload("res://scenes/bosses/guard_cruiser.tscn")
+const PROJECTILE_SCENE = preload("res://scenes/projectile.tscn")
+
+@export var stage_number: int = 2
+@export var current_level: int = 4
+@export var stage_checkpoint_level: int = 1
+
+var finished: bool = false
+var game_won: bool = false
+var stars: Array[Vector2] = []
+var star_offset: float = 0.0
+
+var stage_acquisitions: Dictionary = {
+	"primary_weapon_acquired": true,
+	"shield_acquired": true,
+	"em_jammer_acquired": true
+}
+
+var show_debug_overlay: bool = false
+var _pending_starting_hp: int = 12
+
+@onready var player: Area2D = get_node_or_null("Player")
+@onready var weapon_controller: Node = get_node_or_null("WeaponController")
+@onready var em_jammer_controller: Node2D = get_node_or_null("EMJammerController")
+@onready var boss: Area2D = get_node_or_null("GuardCruiser")
+@onready var projectiles_container: Node = get_node_or_null("Projectiles")
+@onready var enemy_projectiles_container: Node = get_node_or_null("EnemyProjectiles")
+@onready var hud: CanvasLayer = get_node_or_null("HUD")
+@onready var info: Label = get_node_or_null("HUD/Info")
+@onready var boss_bar: Label = get_node_or_null("HUD/BossBar")
+@onready var jammer_status: Label = get_node_or_null("HUD/JammerStatus")
+@onready var message: Label = get_node_or_null("HUD/Message")
+var debug_label: Label = null
+
+
+func _ready() -> void:
+	randomize()
+	for i in range(110):
+		stars.append(Vector2(randf_range(0.0, 1280.0), randf_range(0.0, 720.0)))
+
+	_setup_hud_labels()
+	_setup_debug_overlay()
+
+	if not is_instance_valid(player):
+		player = get_node_or_null("Player")
+	if not is_instance_valid(weapon_controller):
+		weapon_controller = get_node_or_null("WeaponController")
+	if not is_instance_valid(em_jammer_controller):
+		em_jammer_controller = get_node_or_null("EMJammerController")
+	if not is_instance_valid(boss):
+		boss = get_node_or_null("GuardCruiser")
+	if not is_instance_valid(projectiles_container):
+		projectiles_container = get_node_or_null("Projectiles")
+	if not is_instance_valid(enemy_projectiles_container):
+		enemy_projectiles_container = get_node_or_null("EnemyProjectiles")
+
+	start_level(4, _pending_starting_hp)
+
+
+func initialize_from_stage2_level3(p_stage_data: Dictionary) -> void:
+	stage_acquisitions = p_stage_data.duplicate()
+	stage_acquisitions["primary_weapon_acquired"] = true
+	stage_acquisitions["shield_acquired"] = true
+	stage_acquisitions["em_jammer_acquired"] = true
+
+	var preserved_hp: int = p_stage_data.get("health", 12)
+	_pending_starting_hp = preserved_hp
+	if is_inside_tree():
+		start_level(4, preserved_hp)
+
+
+func is_primary_weapon_acquired() -> bool:
+	return stage_acquisitions.get("primary_weapon_acquired", true)
+
+
+func is_shield_acquired() -> bool:
+	return stage_acquisitions.get("shield_acquired", true)
+
+
+func is_em_jammer_acquired() -> bool:
+	return stage_acquisitions.get("em_jammer_acquired", true)
+
+
+func _setup_hud_labels() -> void:
+	if is_instance_valid(info):
+		info.add_theme_font_size_override("font_size", 22)
+	if is_instance_valid(boss_bar):
+		boss_bar.add_theme_font_size_override("font_size", 22)
+	if is_instance_valid(jammer_status):
+		jammer_status.add_theme_font_size_override("font_size", 20)
+	if is_instance_valid(message):
+		message.add_theme_font_size_override("font_size", 26)
+		message.visible = false
+
+
+func _setup_debug_overlay() -> void:
+	debug_label = Label.new()
+	debug_label.name = "DebugOverlay"
+	debug_label.offset_left = 20.0
+	debug_label.offset_top = 80.0
+	debug_label.offset_right = 750.0
+	debug_label.offset_bottom = 260.0
+	debug_label.add_theme_font_size_override("font_size", 16)
+	debug_label.add_theme_color_override("font_color", Color(0.4, 0.9, 1.0, 0.95))
+	debug_label.visible = false
+	if is_instance_valid(hud):
+		hud.add_child(debug_label)
+
+
+func start_level(target_level: int, starting_hp: int = 12) -> void:
+	current_level = target_level
+	finished = false
+	game_won = false
+
+	_clear_spawned_projectiles()
+
+	# 1. Setup Player
+	if is_instance_valid(player):
+		if not player.health_changed.is_connected(_on_player_health_changed):
+			player.health_changed.connect(_on_player_health_changed)
+		if not player.died.is_connected(_on_player_died):
+			player.died.connect(_on_player_died)
+
+		player.prepare_for_level(starting_hp)
+		player.position = Vector2(640.0, 560.0) # Arcade center-bottom spawn
+
+	# 2. Setup Weapon Controller
+	if is_instance_valid(weapon_controller):
+		var proj_parent: Node = projectiles_container if is_instance_valid(projectiles_container) else self
+		weapon_controller.setup(player, proj_parent)
+		weapon_controller.set_firing_enabled(is_primary_weapon_acquired())
+
+	# 3. Setup EM Jammer Controller
+	if is_instance_valid(em_jammer_controller):
+		em_jammer_controller.setup(player, self)
+		em_jammer_controller.set_acquired(is_em_jammer_acquired())
+
+	# 4. Setup Guard Cruiser Mini-Boss
+	if is_instance_valid(boss):
+		boss.set_target_player(player)
+		var enemy_proj_parent: Node = enemy_projectiles_container if is_instance_valid(enemy_projectiles_container) else self
+		boss.set_projectiles_container(enemy_proj_parent)
+
+		if not boss.phase_threshold_reached.is_connected(_on_boss_phase_threshold_reached):
+			boss.phase_threshold_reached.connect(_on_boss_phase_threshold_reached)
+		if not boss.health_changed.is_connected(_on_boss_health_changed):
+			boss.health_changed.connect(_on_boss_health_changed)
+
+		boss.position = Vector2(640.0, 150.0)
+		boss.health = 400
+		boss.can_take_damage = true
+		boss.phase_1_completed = false
+		boss.is_destroyed = false
+
+	if is_instance_valid(message):
+		message.visible = false
+
+	_update_hud()
+	_update_debug_overlay()
+
+
+func _clear_spawned_projectiles() -> void:
+	if is_instance_valid(projectiles_container):
+		for child in projectiles_container.get_children():
+			child.queue_free()
+	if is_instance_valid(enemy_projectiles_container):
+		for child in enemy_projectiles_container.get_children():
+			child.queue_free()
+	if is_instance_valid(weapon_controller) and weapon_controller.has_method("clear_projectiles"):
+		weapon_controller.clear_projectiles()
+
+
+func _process(delta: float) -> void:
+	# Subtle vertical drift starfield for full arcade space atmosphere
+	star_offset = fmod(star_offset + 30.0 * delta, 720.0)
+	queue_redraw()
+
+	if finished:
+		_update_debug_overlay()
+		return
+
+	_update_hud()
+	_update_debug_overlay()
+
+
+func _draw() -> void:
+	draw_rect(Rect2(Vector2.ZERO, Vector2(1280, 720)), Color(0.02, 0.025, 0.06))
+	for point in stars:
+		var scroll_y: float = fmod(point.y + star_offset, 720.0)
+		draw_circle(Vector2(point.x, scroll_y), 1.25, Color(0.65, 0.75, 0.95, 0.65))
+
+
+func _on_boss_health_changed(_current: int, _maximum: int) -> void:
+	_update_hud()
+	_update_debug_overlay()
+
+
+func _on_player_health_changed(_current: int, _maximum: int) -> void:
+	_update_hud()
+	_update_debug_overlay()
+
+
+func _on_boss_phase_threshold_reached(phase: int) -> void:
+	if phase == 1:
+		finished = true
+		game_won = true
+
+		if is_instance_valid(player):
+			player.set_physics_process(false)
+		if is_instance_valid(weapon_controller):
+			weapon_controller.set_firing_enabled(false)
+
+		_clear_spawned_projectiles()
+
+		if is_instance_valid(message):
+			message.visible = true
+			var boss_hp: int = boss.health if is_instance_valid(boss) else 200
+			var boss_max: int = boss.max_health if is_instance_valid(boss) else 400
+			message.text = "STAGE 2 / LEVEL 4 COMPLETE\nGUARD CRUISER — PHASE 1 DISABLED\nBOSS HP: %d / %d\n[PHASE 2 — NEXT MILESTONE]\nPress [R] to replay Stage 2 from Checkpoint" % [
+				boss_hp, boss_max
+			]
+
+		phase_1_completed.emit()
+		level_completed.emit(current_level)
+		_update_debug_overlay()
+
+
+func _on_player_died() -> void:
+	finished = true
+	game_won = false
+
+	if is_instance_valid(player):
+		player.set_physics_process(false)
+	if is_instance_valid(weapon_controller):
+		weapon_controller.set_firing_enabled(false)
+
+	if is_instance_valid(boss):
+		boss.stop_attack()
+
+	_clear_spawned_projectiles()
+
+	if is_instance_valid(message):
+		message.visible = true
+		message.text = "SHIP DESTROYED (STAGE %d / LEVEL %d)\nPress [R] to Revive at Stage 2 Checkpoint" % [stage_number, current_level]
+
+	_update_debug_overlay()
+
+
+func revive_at_stage_checkpoint() -> Node:
+	# Reviving from Level 4 returns strictly to Stage 2 Level 1!
+	var stage2_scene = load("res://scenes/stage2/stage2_main.tscn") as PackedScene
+	var stage2_inst = stage2_scene.instantiate()
+	if stage2_inst.has_method("revive_at_stage_checkpoint"):
+		stage2_inst.revive_at_stage_checkpoint()
+
+	if is_inside_tree() and get_tree().current_scene == self:
+		get_tree().change_scene_to_file("res://scenes/stage2/stage2_main.tscn")
+	return stage2_inst
+
+
+func _update_hud() -> void:
+	if not is_instance_valid(player):
+		return
+
+	if is_instance_valid(info):
+		info.text = "STAGE %d / LEVEL %d     HP %02d / %02d" % [
+			stage_number, current_level, player.health, player.max_health
+		]
+
+	if is_instance_valid(boss_bar):
+		if is_instance_valid(boss):
+			boss_bar.text = "GUARD CRUISER: %03d / %03d HP" % [boss.health, boss.max_health]
+		else:
+			boss_bar.text = "GUARD CRUISER: --- / 400 HP"
+
+	if is_instance_valid(jammer_status):
+		if is_instance_valid(em_jammer_controller):
+			if em_jammer_controller.is_ready():
+				jammer_status.text = "EM JAMMER: READY [E]"
+				jammer_status.add_theme_color_override("font_color", Color(0.2, 0.9, 1.0))
+			else:
+				var cd: float = em_jammer_controller.get_cooldown_remaining()
+				jammer_status.text = "EM JAMMER: COOLING (%.1fs)" % cd
+				jammer_status.add_theme_color_override("font_color", Color(0.8, 0.7, 0.3))
+
+
+func _update_debug_overlay() -> void:
+	if not is_instance_valid(debug_label) or not debug_label.visible:
+		return
+	if not is_instance_valid(player):
+		return
+
+	var speed: float = player.movement_velocity.length()
+	var state_str: String = player.get_regen_state_string() if player.has_method("get_regen_state_string") else ""
+	var b_hp: int = boss.health if is_instance_valid(boss) else 0
+	var b_stun: String = "STUNNED (%.1fs)" % boss.stun_timer if (is_instance_valid(boss) and boss.is_stunned) else "ACTIVE"
+	var jammer_cd: float = em_jammer_controller.get_cooldown_remaining() if is_instance_valid(em_jammer_controller) else 0.0
+
+	debug_label.text = "[DEBUG OVERLAY — F3 to toggle]\nStage: %d | Level: %d | Mode: Full Arcade Boss Arena\nPlayer HP: %02d / %02d | Speed: %5.1f px/s | Regen: %s\nBoss HP: %d / 400 | Phase: 1 (Threshold: 200) | Boss State: %s\nEM Jammer: %s (CD: %.1fs) | Weapon: ACTIVE" % [
+		stage_number, current_level,
+		player.health, player.max_health, speed, state_str,
+		b_hp, b_stun,
+		"READY" if (is_instance_valid(em_jammer_controller) and em_jammer_controller.is_ready()) else "COOLING",
+		jammer_cd
+	]
+
+
+func _unhandled_key_input(event: InputEvent) -> void:
+	if event is InputEventKey and event.pressed and not event.echo:
+		if event.keycode == KEY_F3:
+			show_debug_overlay = not show_debug_overlay
+			if is_instance_valid(debug_label):
+				debug_label.visible = show_debug_overlay
+				_update_debug_overlay()
+		elif event.keycode == KEY_R or event.physical_keycode == KEY_R:
+			revive_at_stage_checkpoint()
+		elif event.keycode == KEY_ESCAPE:
+			get_tree().quit()

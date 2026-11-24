@@ -215,3 +215,37 @@ With Milestone 8 introducing Guard Drone interceptors, the 5-kill elimination ob
 
 > [!NOTE]
 > All narrative descriptions and dialogue hooks remain non-canonical stubs pending official creative writing deliverables.
+
+---
+
+## 9. Stage 2 Level 4 Semantic Dialogue Event Hooks (Milestone 9)
+
+With Milestone 9 introducing the Guard Cruiser mini-boss, the boss arena, and active EM Jammer deployment, the following semantic event hooks are available for dialogue and narrative sequencing:
+
+| Event ID | Trigger Timing | Associated Payload / Context |
+| :--- | :--- | :--- |
+| `stage2_l4_boss_encountered` | Boss arena startup / entry from Level 3 | Capital cruiser alert, arena combat lockdown initiated |
+| `stage2_l4_boss_attack_started` | Guard Cruiser enters windup state | Weapon capacitor charge detected, evasive warning |
+| `stage2_l4_jammer_activated` | Player activates EM Jammer | High-frequency electromagnetic pulse discharge event |
+| `stage2_l4_boss_stunned` | EM Jammer pulse hits Guard Cruiser | Capital ship electrical systems disabled, 10s vulnerability window |
+| `stage2_l4_boss_stun_ended` | Stun timer reaches 0.0s | Cruiser auxiliary power restored, offensive systems reactivated |
+| `stage2_l4_phase1_completed` | Guard Cruiser reaches 200 HP | Phase 1 systems disabled, energy barrier collapses, milestone complete |
+
+### 9.1 Guard Cruiser Phase 1 Completion Payload Schema
+
+```json
+{
+  "event_id": "stage2_l4_phase1_completed",
+  "stage": 2,
+  "level": 4,
+  "boss_name": "Guard Cruiser",
+  "phase_completed": 1,
+  "remaining_boss_health": 200,
+  "max_boss_health": 400,
+  "status": "phase_1_disabled",
+  "description": "Primary weapon batteries and forward shielding neutralized. Auxiliary reactor core powering backup combat systems."
+}
+```
+
+> [!NOTE]
+> All narrative descriptions and dialogue hooks remain non-canonical stubs pending official creative writing deliverables.

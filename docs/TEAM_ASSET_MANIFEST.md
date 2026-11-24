@@ -75,7 +75,7 @@ Every asset has been evaluated against the existing codebase, classified into st
 | **HUD & Labels (Batch 01)** | | | | | | |
 | `assets/UI HUI/overheat label.png` | `res://assets/ui/labels/label_overheat.png` | $298 \times 112$ | RGBA | N/A | **IMPORTED / RESERVED** | Overheat warning label. Reserved for future weapon heat mechanics. |
 | **Stage 2 Mini-Boss (Batch 01)** | | | | | | |
-| `assets/entities/mini-boss/alive-p1.png` | `res://assets/sprites/bosses/stage2_miniboss/miniboss_alive_p1.png` | $601 \times 321$ | RGBA | North ($-Y$) | **IMPORTED / RESERVED** | Phase 1 sprite. Reserved for Stage 2 (NOT Milestone 4; Milestone 4 is S1L4 twin-barrel shooting). |
+| `assets/entities/mini-boss/alive-p1.png` | `res://assets/sprites/bosses/stage2_miniboss/miniboss_alive_p1.png` | $601 \times 321$ | RGBA | North ($-Y$) | **INTEGRATED / OPERATIONAL** | Phase 1 sprite. Integrated in Stage 2 Level 4 Boss Arena (`scenes/bosses/guard_cruiser.tscn`) under `Visuals/OfficialArt/Phase1Sprite` with $0.4\times$ scale and $\pi$ rotation facing South. |
 | `assets/entities/mini-boss/alive-p2.png` | `res://assets/sprites/bosses/stage2_miniboss/miniboss_alive_p2.png` | $601 \times 321$ | RGBA | North ($-Y$) | **IMPORTED / RESERVED** | Phase 2 animated variant. Reserved for Stage 2. |
 | `assets/entities/mini-boss/dead.png` | `res://assets/sprites/bosses/stage2_miniboss/miniboss_dead.png` | $601 \times 321$ | RGBA | North ($-Y$) | **IMPORTED / RESERVED** | Destruction state sprite. Reserved for Stage 2. |
 | **Stage 3 Final Boss (Batch 01)** | | | | | | |

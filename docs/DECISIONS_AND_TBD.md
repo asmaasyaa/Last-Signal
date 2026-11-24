@@ -248,7 +248,40 @@ This document tracks unresolved balance parameters, provisional features, and pe
      - `KAMIKAZE_IMPACT` ($1$): Self-destructing on player contact awards 0 kill credit.
      - `OFFSCREEN_DESPAWN` ($2$): Flying offscreen left ($X < -120$) awards 0 kill credit.
      - `LEVEL_CLEANUP` ($3$): Scene transitions/death resets award 0 kill credit.
-  4. **EM Jammer Equipment TBDs (Deferred to Milestone 9 / Stage 2 Level 4+):**
+  4. **EM Jammer Equipment TBDs (Implemented in Milestone 9):**
      - Target mechanics: 120° forward sector arc, 10-second enemy movement/firing stun, 30-second cooldown timer.
-     - Status in Milestone 8: Equipment acquisition event emitted (`is_em_jammer_acquired() == true`), but active player control/activation is deferred.
+     - Status: Fully implemented in `scripts/equipment/em_jammer_controller.gd`.
+- **Status:** **Configurable Baseline / Subject to Lead Review during playtesting.**
+
+---
+
+## 15. Milestone 9: Stage 2 Level 4 Configurable Parameters & Balancing Items
+
+- **Date:** 2026-11-24
+- **Scope:** Guard Cruiser Mini-Boss Phase 1, Boss Arena, and EM Jammer Active Equipment.
+- **Configurable Balance Parameters (`@export`):**
+  1. **Guard Cruiser Mini-Boss (`scripts/bosses/guard_cruiser.gd`):**
+     - `@export var max_health: int = 400`: Total cruiser HP. Requires 200 blaster hits to complete Phase 1 ($400 \to 200\text{ HP}$).
+     - `@export var phase_1_threshold: int = 200`: Health threshold at which Phase 1 concludes and damage is clamped.
+     - `@export var move_speed: float = 85.0`: Horizontal patrol drift velocity across the upper arena sector.
+     - `@export var patrol_margin_left: float = 220.0`: Leftmost horizontal sweep boundary.
+     - `@export var patrol_margin_right: float = 1060.0`: Rightmost horizontal sweep boundary.
+     - `@export var attack_interval: float = 2.6`: Interval in seconds between burst attack cycles.
+     - `@export var windup_duration: float = 0.5`: Telegraph warning duration showing electrical hull charge before burst discharge.
+     - `@export var burst_count: int = 3`: Number of projectile bolts fired per attack volley.
+     - `@export var burst_spread_angle: float = 12.0`: Angular divergence spread in degrees across the 3 bolts.
+     - `@export var projectile_speed: float = 300.0`: Linear flight velocity of boss energy bolts.
+     - `@export var contact_damage: int = 1`: Damage inflicted to player upon physical collision with the cruiser hull.
+     - `@export var official_art_enabled: bool = true`: Controls rendering of official Phase 1 sprite vs. procedural vector fallback.
+  2. **EM Jammer Active Equipment (`scripts/equipment/em_jammer_controller.gd`):**
+     - `@export var cone_angle_degrees: float = 120.0`: Total directional cone arc ($\pm 60^\circ$ from player facing heading).
+     - `@export var cone_range: float = 600.0`: Effective forward range of the electromagnetic pulse wave in pixels.
+     - `@export var stun_duration: float = 10.0`: Stun duration in seconds applied to affected enemies.
+     - `@export var cooldown_duration: float = 30.0`: Recharge cooldown in seconds before the jammer can be re-triggered.
+     - `@export var input_action_name: String = "em_jammer"`: InputMap action name mapped to physical key `E`.
+- **Open Balancing & Design Questions for Technical / Creative Leads:**
+  1. *Stun Duration Impact:* A 10.0-second stun window provides substantial uninterrupted firing time ($\approx 120$ player blasters at $12\text{ shots/s}$). Leads should evaluate during manual playtesting whether 10.0s feels rewarding or makes Phase 1 too forgiving.
+  2. *Jammer Range:* The provisional 600 px range covers nearly the full vertical height of the $720\text{px}$ arena when positioned near the bottom edge. Should the range be tightened to $450\text{–}500\text{ px}$ to demand closer player proximity?
+  3. *Input Mapping:* Key `E` is provisionally bound for `em_jammer`. Does the team prefer right mouse button (`MOUSE_BUTTON_RIGHT`) or `Space` as an alternative primary active equipment binding?
+  4. *Phase 2 Tease:* Phase 2 and Dead sprites remain strictly staged and hidden, ready for activation when Milestone 10 is authorized.
 - **Status:** **Configurable Baseline / Subject to Lead Review during playtesting.**

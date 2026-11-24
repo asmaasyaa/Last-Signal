@@ -194,3 +194,23 @@ Milestone 8 integrated the official Guard Drone artwork from Batch 02 into activ
    - Visual presentation cleanly supports all 4 destruction reasons (`PLAYER_WEAPON`, `KAMIKAZE_IMPACT`, `OFFSCREEN_DESPAWN`, `LEVEL_CLEANUP`) with immediate collision shape deactivation, single-hit damage protection, and node freeing.
 3. **Automated Verification Baseline:**
    - 1,282 total automated assertions across 11 test suites (Milestones 1 through 8) passing with 0 failures.
+
+---
+
+## 11. Milestone 9: Stage 2 Level 4 Guard Cruiser Phase 1 & EM Jammer Integration Results
+
+Milestone 9 integrates the official Phase 1 Guard Cruiser mini-boss artwork from Batch 01 into active gameplay:
+
+1. **Guard Cruiser Mini-Boss Official Artwork Integration (`scenes/bosses/guard_cruiser.tscn`):**
+   - **Delivered Sprites:**
+     - Active: `assets/sprites/bosses/stage2_miniboss/miniboss_alive_p1.png` ($601 \times 321\text{ px}$).
+     - Staged & Reserved: `miniboss_alive_p2.png` ($601 \times 321\text{ px}$) and `miniboss_dead.png` ($601 \times 321\text{ px}$).
+   - **Visual Subtree Isolation:** Integrated into `scenes/bosses/guard_cruiser.tscn` under `Visuals/OfficialArt/Phase1Sprite`. `Phase2Sprite` and `DeadSprite` are staged under the same container, strictly hidden and reserved for Phase 2 and defeat in future milestones.
+   - **Scale & Orientation:** Scaled to $0.4 \times 0.4$ ($\approx 240.4 \times 128.4\text{ px}$) and rotated $\pi$ ($180^\circ$) so the cruiser's heavy prow faces South toward the player in the arcade arena. Root `Area2D` maintains neutral scale `Vector2.ONE`.
+   - **Hitbox Alignment:** Central hull collision shape is `RectangleShape2D(230.0, 110.0)`, closely matching the scaled sprite footprint without overlapping empty transparent margins.
+   - **Procedural Fallback:** `Visuals/ProceduralFallback` (`scripts/bosses/guard_cruiser_visual.gd`) features a geometric armored capital hull with twin warp nacelles, glowing bridge, and dynamic electrical stun arc overlays.
+2. **EM Jammer Visual Wave Presentation (`scripts/equipment/em_jammer_controller.gd`):**
+   - Expanding $120^\circ$ circular arc pulse wave in cyan/electric blue rendered via custom `_draw` for $0.35\text{s}$ along the player's firing vector.
+   - Zero damage guarantee verified by automated test assertions.
+3. **Automated Verification Baseline:**
+   - 1,451 total automated assertions across 12 test suites (Milestones 1 through 9) passing with 0 failures.
