@@ -1,12 +1,16 @@
 extends Node2D
-## Stage 1 Coordinator: Manages Level 1, Level 2, Level 3 & Level 4 30s arcade survival/combat runs.
+## Stage 1 Coordinator: Manages Level 1, Level 2, Level 3, Level 4 & Level 5 30s arcade survival/combat runs.
 ## Implements Call Down, Signal Up, HP persistence, and Stage 1 Checkpoint revive semantics.
 
 signal equipment_acquired(equipment_data: Dictionary)
+signal distress_sos_received(payload: Dictionary)
+signal stage_completed(stage_data: Dictionary)
 
 const ASTEROID_SCENE: PackedScene = preload("res://scenes/asteroid.tscn")
 const SATELLITE_SCENE: PackedScene = preload("res://scenes/satellite.tscn")
+const MINING_SATELLITE_SCENE: PackedScene = preload("res://scenes/mining_satellite.tscn")
 const WRECKED_SHIP_SCENE: PackedScene = preload("res://scenes/wrecked_ship.tscn")
+const DAMAGED_MINING_SHIP_SCENE: PackedScene = preload("res://scenes/damaged_mining_ship.tscn")
 
 @export var stage_number: int = 1
 @export var current_level: int = 1
@@ -55,6 +59,14 @@ const WRECKED_SHIP_SCENE: PackedScene = preload("res://scenes/wrecked_ship.tscn"
 @export var l4_speed_large_min: float = 90.0
 @export var l4_speed_large_max: float = 170.0
 
+# Level 5 parameters (Final Stage 1 asteroid sector & mining SOS) - PROPOSAL / TBD
+@export var l5_spawn_interval_min: float = 0.85
+@export var l5_spawn_interval_max: float = 1.50
+@export var l5_small_ratio: float = 0.30  # 30% Small
+@export var l5_medium_ratio: float = 0.40 # 40% Medium
+@export var l5_large_ratio: float = 0.30  # 30% Large
+@export var l5_satellite_spawn_time: float = 20.0 # at 20s remaining (10s elapsed)
+
 # Milestone 1 backward compatibility exports
 @export var spawn_interval_min: float = 0.35
 @export var spawn_interval_max: float = 0.85
@@ -82,6 +94,10 @@ var debug_label: Label = null
 var satellite_spawned: bool = false
 var active_satellite: Area2D = null
 var satellite_extracted: bool = false
+var mining_satellite_spawned: bool = false
+var active_mining_satellite: Area2D = null
+var mining_satellite_extracted: bool = false
+var active_mining_ship: Node2D = null
 var stage_acquisitions: Dictionary = {}
 var telemetry_notice: String = ""
 var telemetry_notice_timer: float = 0.0
@@ -154,6 +170,10 @@ func _process(delta: float) -> void:
 	if current_level == 2 and not satellite_spawned and time_remaining <= l2_satellite_spawn_time:
 		_spawn_satellite()
 
+	# Level 5 Mining Satellite scheduling
+	if current_level == 5 and not mining_satellite_spawned and time_remaining <= l5_satellite_spawn_time:
+		_spawn_mining_satellite()
+
 	# Asteroid interval spawner
 	spawn_remaining -= delta
 	if spawn_remaining <= 0.0:
@@ -169,6 +189,9 @@ func _process(delta: float) -> void:
 		elif current_level == 4:
 			cur_min = l4_spawn_interval_min
 			cur_max = l4_spawn_interval_max
+		elif current_level == 5:
+			cur_min = l5_spawn_interval_min
+			cur_max = l5_spawn_interval_max
 		spawn_remaining = randf_range(cur_min, cur_max)
 
 	if time_remaining <= 0.0:
@@ -225,6 +248,18 @@ func _spawn_asteroid() -> void:
 		else:
 			rock.set_size_tier(rock.AsteroidSize.LARGE)
 			rock.speed = randf_range(l4_speed_large_min, l4_speed_large_max)
+	elif current_level == 5:
+		# Level 5: final asteroid belt (small 30%, medium 40%, large 30%)
+		var roll: float = randf()
+		if roll < l5_small_ratio:
+			rock.set_size_tier(rock.AsteroidSize.SMALL)
+			rock.speed = randf_range(l4_speed_small_min, l4_speed_small_max)
+		elif roll < l5_small_ratio + l5_medium_ratio:
+			rock.set_size_tier(rock.AsteroidSize.MEDIUM)
+			rock.speed = randf_range(l4_speed_medium_min, l4_speed_medium_max)
+		else:
+			rock.set_size_tier(rock.AsteroidSize.LARGE)
+			rock.speed = randf_range(l4_speed_large_min, l4_speed_large_max)
 
 	add_child(rock)
 
@@ -248,9 +283,28 @@ func _on_satellite_extracted(payload: Dictionary) -> void:
 	_update_debug_overlay()
 
 
+func _spawn_mining_satellite() -> void:
+	mining_satellite_spawned = true
+	if not MINING_SATELLITE_SCENE:
+		return
+	active_mining_satellite = MINING_SATELLITE_SCENE.instantiate()
+	active_mining_satellite.position = Vector2(randf_range(300.0, 980.0), -50.0)
+	active_mining_satellite.extracted.connect(_on_mining_satellite_extracted)
+	add_child(active_mining_satellite)
+
+
+func _on_mining_satellite_extracted(payload: Dictionary) -> void:
+	mining_satellite_extracted = true
+	stage_acquisitions["mining_satellite_telemetry"] = payload
+	telemetry_notice = "[DATA RECOVERED: Mining satellite telemetry stored]"
+	telemetry_notice_timer = 5.0
+	_update_hud()
+	_update_debug_overlay()
+
+
 func _clear_spawned_entities() -> void:
 	for child in get_children():
-		if child.is_in_group("asteroids") or child.is_in_group("satellites") or child.is_in_group("wrecked_ships") or child.is_in_group("projectiles"):
+		if child.is_in_group("asteroids") or child.is_in_group("satellites") or child.is_in_group("wrecked_ships") or child.is_in_group("projectiles") or child.is_in_group("mining_ships") or child.is_in_group("mining_satellites"):
 			child.queue_free()
 	if not is_instance_valid(weapon_controller):
 		weapon_controller = get_node_or_null("WeaponController")
@@ -265,6 +319,9 @@ func start_level(target_level: int, starting_hp: int = -1) -> void:
 	time_remaining = level_duration
 	satellite_spawned = false
 	active_satellite = null
+	mining_satellite_spawned = false
+	active_mining_satellite = null
+	active_mining_ship = null
 	telemetry_notice = ""
 	telemetry_notice_timer = 0.0
 
@@ -273,6 +330,7 @@ func start_level(target_level: int, starting_hp: int = -1) -> void:
 
 	if target_level == 1:
 		satellite_extracted = false
+		mining_satellite_extracted = false
 		stage_acquisitions.clear()
 		spawn_remaining = 0.7
 		if is_instance_valid(weapon_controller):
@@ -287,6 +345,10 @@ func start_level(target_level: int, starting_hp: int = -1) -> void:
 			weapon_controller.set_firing_enabled(false)
 	elif target_level == 4:
 		spawn_remaining = 1.0
+		if is_instance_valid(weapon_controller):
+			weapon_controller.set_firing_enabled(is_primary_weapon_acquired())
+	elif target_level == 5:
+		spawn_remaining = 0.85
 		if is_instance_valid(weapon_controller):
 			weapon_controller.set_firing_enabled(is_primary_weapon_acquired())
 
@@ -315,11 +377,17 @@ func advance_to_next_level() -> void:
 			start_level(3, persistent_hp)
 		elif current_level == 3:
 			start_level(4, persistent_hp)
+		elif current_level == 4:
+			start_level(5, persistent_hp)
 
 
 func revive_at_stage_checkpoint() -> void:
 	stage_acquisitions.clear()
 	satellite_extracted = false
+	mining_satellite_extracted = false
+	mining_satellite_spawned = false
+	active_mining_satellite = null
+	active_mining_ship = null
 	if not is_instance_valid(weapon_controller):
 		weapon_controller = get_node_or_null("WeaponController")
 	if is_instance_valid(weapon_controller):
@@ -374,7 +442,7 @@ func _update_debug_overlay() -> void:
 	var mouse_pos: Vector2 = player.get_global_mouse_position()
 	var dist_to_mouse: float = (mouse_pos - player.global_position).length()
 	var sat_status: String = "EXTRACTED" if satellite_extracted else ("ACTIVE" if is_instance_valid(active_satellite) else ("PENDING" if not satellite_spawned else "MISSED"))
-	var wep_status: String = "ACTIVE" if (is_primary_weapon_acquired() and current_level == 4) else ("ACQUIRED" if is_primary_weapon_acquired() else "NO")
+	var wep_status: String = "ACTIVE" if (is_primary_weapon_acquired() and current_level >= 4) else ("ACQUIRED" if is_primary_weapon_acquired() else "NO")
 	var shd_status: String = "YES" if is_shield_acquired() else "NO"
 
 	debug_label.text = "[DEBUG OVERLAY — F3 to toggle]\nStage: %d | Level: %d | Level Duration: %.1fs\nHP: %02d / %02d (Persisted across levels)\nSpeed: %5.1f px/s (Threshold: %.1f px/s | Deadzone: %.1f px)\nStationary Duration: %4.2f s (Wait Required: %.1f s)\nRegen Progress: %5.1f%% (+%.1f HP/s) | State: %s\nDistance to Mouse: %5.2f px\nSatellite Status: %s (Optional) | Weapon: %s | Shield: %s" % [
@@ -454,8 +522,52 @@ func _complete_level() -> void:
 				weapon_controller.set_firing_enabled(false)
 			_clear_spawned_entities()
 			var sat_str := "SUCCESS (Telemetry Recovered)" if satellite_extracted else "MISSED (Satellite Drifted Away)"
-			message.text = "STAGE 1 / LEVEL 4 COMPLETE!\nAsteroid Combat Zone Cleared (HP: %02d/%02d)\nSatellite Extraction: %s\nPrimary Weapon: Twin-barrel Pulse Cannon (Active)\nShield: Deflector Shield Generator (Stored)\n\n[END OF PROTOTYPE — MILESTONE 4 COMPLETE]\nPress [R] to replay Stage 1 from Checkpoint" % [
+			message.text = "STAGE 1 / LEVEL 4 COMPLETE!\nAsteroid Combat Zone Cleared (HP: %02d/%02d)\nSatellite Extraction: %s\nPrimary Weapon: Twin-barrel Pulse Cannon (Active)\nShield: Deflector Shield Generator (Stored)\n\nPress [Space/Enter] for Level 5\n[END OF PROTOTYPE — MILESTONE 4 COMPLETE]\nPress [R] to replay Stage 1 from Checkpoint" % [
 				player.health, player.max_health, sat_str
+			]
+		elif current_level == 5:
+			if not is_instance_valid(weapon_controller):
+				weapon_controller = get_node_or_null("WeaponController")
+			if is_instance_valid(weapon_controller):
+				weapon_controller.set_firing_enabled(false)
+			_clear_spawned_entities()
+
+			if DAMAGED_MINING_SHIP_SCENE:
+				var mining_ship = DAMAGED_MINING_SHIP_SCENE.instantiate()
+				mining_ship.position = Vector2(640.0, 210.0)
+				add_child(mining_ship)
+				active_mining_ship = mining_ship
+
+			var sos_payload := {
+				"event_id": "stage1_l5_sos_received",
+				"stage": 1,
+				"level": 5,
+				"source_entity": "Damaged Mining Vessel",
+				"transmission_type": "Automated SOS",
+				"next_stage": 2,
+				"description": "Distress beacon intercepted from damaged mining vessel drifting in the deep sector."
+			}
+
+			var stage_complete_payload := {
+				"event_id": "stage1_completed",
+				"stage": 1,
+				"levels_cleared": 5,
+				"next_stage": 2,
+				"next_stage_available": false
+			}
+
+			stage_acquisitions["stage1_completed"] = true
+			stage_acquisitions["mining_ship_encountered"] = true
+			stage_acquisitions["sos_payload"] = sos_payload
+			stage_acquisitions["stage1_complete_payload"] = stage_complete_payload
+
+			distress_sos_received.emit(sos_payload)
+			stage_completed.emit(stage_complete_payload)
+
+			var comm_str := "SUCCESS (Telemetry Recovered)" if satellite_extracted else "MISSED (Satellite Drifted Away)"
+			var min_str := "SUCCESS (Telemetry Recovered)" if mining_satellite_extracted else "MISSED (Satellite Drifted Away)"
+			message.text = "STAGE 1 COMPLETE!\nFinal Asteroid Sector Cleared (HP: %02d/%02d)\nTelemetry: Comm [%s] | Mining [%s]\n\n[DISTRESS BEACON INTERCEPTED: Damaged Mining Vessel]\n[TRANSMISSION: Automated SOS Received]\n(Coordinates point toward Stage 2)\n\n[STAGE 1 COMPLETE — PROTOTYPE FINISHED]\nPress [R] to replay Stage 1 from Checkpoint" % [
+				player.health, player.max_health, comm_str, min_str
 			]
 	_update_debug_overlay()
 
@@ -473,7 +585,19 @@ func _unhandled_key_input(event: InputEvent) -> void:
 			else:
 				revive_at_stage_checkpoint()
 		elif event.keycode == KEY_SPACE or event.keycode == KEY_ENTER:
-			if finished and game_won and (current_level >= 1 and current_level <= 3):
+			if finished and game_won and (current_level >= 1 and current_level <= 4):
 				advance_to_next_level()
 		elif event.keycode == KEY_ESCAPE:
 			get_tree().quit()
+
+
+func is_stage1_completed() -> bool:
+	return stage_acquisitions.get("stage1_completed", false)
+
+
+func is_mining_satellite_extracted() -> bool:
+	return mining_satellite_extracted
+
+
+func has_mining_ship_encountered() -> bool:
+	return stage_acquisitions.get("mining_ship_encountered", false)

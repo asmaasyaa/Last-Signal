@@ -101,3 +101,51 @@ To ensure robust behavior across both development and production builds:
    - If an event is missing, the manager safely no-ops and allows gameplay to proceed uninterrupted.
    - If an audio file or portrait texture is missing, the text is displayed with a blank portrait or silent audio.
 
+---
+
+## 5. Stage 1 Level 5 & Stage 1 Completion Semantic Event Hooks
+
+With Milestone 5 implemented, the following additional narrative event hooks are established for future dialogue integration:
+
+### 5.1 Mining Satellite Telemetry Extraction
+
+| Event ID | Trigger Condition | Source Entity | Proposed Narrative Purpose | Status |
+| :--- | :--- | :--- | :--- | :--- |
+| `stage1_l5_mining_satellite_spawned` | Mining survey satellite spawns at $T \le 20\text{s}$ | `MiningSatellite` | Sensor warning of nearby automated industrial beacon | PROPOSED |
+| `stage1_l5_mining_satellite_extracted` | Player maintains proximity for 1.8s | `MiningSatellite` | Telemetry packet decrypted: sector mining survey and distress clues | IMPLEMENTED (Signal) |
+| `stage1_l5_mining_satellite_missed` | Satellite drifts past $Y > 780\text{px}$ without extraction | `Main` | Navigation computer notes missed survey beacon | PROPOSED |
+
+### 5.2 Damaged Mining Vessel & Stage 1 Completion
+
+| Event ID | Trigger Condition | Source Entity | Proposed Narrative Purpose | Status |
+| :--- | :--- | :--- | :--- | :--- |
+| `stage1_l5_sos_received` | 30s survived in Level 5; mining ship encountered | `Main` / `DamagedMiningShip` | Automated SOS transmission intercepted; distress beacon indicates survivors or cargo ahead | IMPLEMENTED (Signal) |
+| `stage1_completed` | Stage 1 Level 5 survival complete | `Main` | Pilot acknowledges exit from Belt into Inner Sector (Stage 2 transition setup) | IMPLEMENTED (Signal) |
+
+### 5.3 Payload Schemas for Level 5 Narrative Events
+
+```json
+{
+  "event_id": "stage1_l5_sos_received",
+  "stage": 1,
+  "level": 5,
+  "source_entity": "Damaged Mining Vessel",
+  "transmission_type": "Automated SOS",
+  "next_stage": 2,
+  "description": "Distress beacon intercepted from damaged mining vessel drifting in the deep sector."
+}
+```
+
+```json
+{
+  "event_id": "stage1_completed",
+  "stage": 1,
+  "levels_cleared": 5,
+  "next_stage": 2,
+  "next_stage_available": false
+}
+```
+
+> [!IMPORTANT]
+> All AI-generated narrative descriptions, distress message logs, and ship identifiers remain **NON-CANONICAL PLACEHOLDERS** until approved by official project narrative leads.
+

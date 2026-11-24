@@ -268,9 +268,86 @@ The following mechanics are **NOT part of the approved Stage 1 design** and must
   - Level timer resets to 30.0s.
   - Stage acquisitions cleared (weapons and shield unacquired).
   - Weapon firing disabled in Level 1; active projectiles cleared.
-- **Level 4 Completion & Prototype Boundary:**
+- **Level 4 Completion & Progression:**
   - Surviving 30 seconds triggers Level 4 complete screen:
-    `"STAGE 1 / LEVEL 4 COMPLETE!\nAsteroid Combat Zone Cleared (HP: %02d/%02d)\nSatellite Extraction: %s\nPrimary Weapon: Twin-barrel Pulse Cannon (Active)\nShield: Deflector Shield Generator (Stored)\n\n[END OF PROTOTYPE — MILESTONE 4 COMPLETE]\nPress [R] to replay Stage 1 from Checkpoint"`
-  - Halts further progression cleanly (no Level 5 auto-advance).
+    `"STAGE 1 / LEVEL 4 COMPLETE!\nAsteroid Combat Zone Cleared (HP: %02d/%02d)\nSatellite Extraction: %s\nPrimary Weapon: Twin-barrel Pulse Cannon (Active)\nShield: Deflector Shield Generator (Stored)\n\nPress [Space/Enter] for Level 5\n[END OF PROTOTYPE — MILESTONE 4 COMPLETE]\nPress [R] to replay Stage 1 from Checkpoint"`
+  - Pressing Space or Enter triggers `advance_to_next_level()`, transitioning to Stage 1 Level 5.
+
+---
+
+## 13. Stage 1 Level 5 Specifications (Milestone 5 Implemented)
+
+- **Mode & Duration:** 30 seconds survival and combat in fixed 1280x720 arcade mode, completing Stage 1.
+- **Level 4 to Level 5 Transition:**
+  - On completing Level 4, pressing Space/Enter advances to Level 5.
+  - Player HP persists exactly from Level 4 (no automatic heal; e.g., 7 HP in Level 4 starts Level 5 at 7 HP).
+  - Acquired equipment (`primary_weapon_acquired = true`, `shield_acquired = true`) is preserved.
+  - Primary weapon twin-barrel continuous firing remains active in Level 5.
+  - Level 5 survival timer initializes to 30.0 seconds.
+  - Previous asteroids, projectiles, and temporary contact cooldowns are cleanly cleared.
+- **Level 5 Asteroid Density & Composition (Provisional TBD):**
+  - Spawn interval range: `0.85s – 1.50s` (average ~1.175s = ~0.85 asteroids/s).
+  - Size distribution: 30% Small (20 HP, 1 dmg), 40% Medium (40 HP, 2 dmg), 30% Large (80 HP, 4 dmg).
+  - Speeds: Small (190–300 px/s), Medium (140–240 px/s), Large (90–170 px/s).
+  - Twin-barrel combat is active; shooting carves navigable corridors through dense rock clusters.
+- **Optional Mining Survey Satellite (`scenes/mining_satellite.tscn`):**
+  - **Spawning:** Spawns once at $T \le 20.0\text{s}$ remaining at random $X \in [300.0, 980.0]$, $Y = -50.0$.
+  - **Drift Motion:** Drifts downward at $95.0\text{ px/s}$ (`drift_speed = 95.0`).
+  - **Detection & Collision:** Area2D on collision layer 8 (Layer 4: Interactables), collision mask 1 (Layer 1: Player).
+  - **Extraction Radius:** $80.0\text{ px}$ (`CircleShape2D`, unscaled root).
+  - **Extraction Duration:** $1.8\text{ seconds}$ continuous presence within radius (`extraction_time = 1.8`).
+  - **Signals:** Emits `extraction_started`, `extraction_progress_changed(progress: float)`, and `extracted(payload: Dictionary)`.
+  - **Telemetry Payload:**
+    ```gdscript
+    {
+        "id": "mining_sat_telemetry_01",
+        "entity_type": "mining_satellite",
+        "stage": 1,
+        "level": 5,
+        "status": "extracted",
+        "data": "Mining sector beacon telemetry recorded [NON-CANONICAL PLACEHOLDER]"
+    }
+    ```
+  - **HUD Feedback:** Setting `telemetry_notice` displays: `[DATA RECOVERED: Mining satellite telemetry stored]` for 5.0 seconds.
+  - **Strictly Optional:** Missing or skipping the mining satellite does NOT cause game over or block victory.
+  - **Despawn:** Clean deletion when crossing $Y > 780.0$.
+- **Damaged Mining Vessel & Stage 1 Conclusion:**
+  - Surviving the full 30 seconds in Level 5 marks Stage 1 complete (`finished = true`, `game_won = true`).
+  - **Weapon Shutdown:** Weapon firing is immediately disabled (`weapon_controller.set_firing_enabled(false)`).
+  - **Entity Cleanup:** Asteroids, projectiles, and active satellites are cleared.
+  - **Derelict Spawn:** Damaged Mining Vessel (`scenes/damaged_mining_ship.tscn`) instantiates at $(640.0, 210.0)$.
+  - **Visual Presentation:** Procedural heavy industrial vessel with dual heavy cargo nacelles, reinforced cutting laser mount, hull breach electrical arc sparks, and pulsing amber distress beacon.
+  - **Signal Emissions:**
+    - `distress_sos_received(payload: Dictionary)` with payload:
+      ```gdscript
+      {
+          "event_id": "stage1_l5_sos_received",
+          "stage": 1,
+          "level": 5,
+          "source_entity": "Damaged Mining Vessel",
+          "transmission_type": "Automated SOS",
+          "next_stage": 2,
+          "description": "Distress beacon intercepted from damaged mining vessel drifting in the deep sector."
+      }
+      ```
+    - `stage_completed(payload: Dictionary)` with payload:
+      ```gdscript
+      {
+          "event_id": "stage1_completed",
+          "stage": 1,
+          "levels_cleared": 5,
+          "next_stage": 2,
+          "next_stage_available": false
+      }
+      ```
+  - **Completion Banner:**
+    `STAGE 1 COMPLETE!\nFinal Asteroid Sector Cleared (HP: %02d/%02d)\nTelemetry: Comm [%s] | Mining [%s]\n\n[DISTRESS BEACON INTERCEPTED: Damaged Mining Vessel]\n[TRANSMISSION: Automated SOS Received]\n(Coordinates point toward Stage 2)\n\n[STAGE 1 COMPLETE — PROTOTYPE FINISHED]\nPress [R] to replay Stage 1 from Checkpoint`
+  - **No Fake Stage 2:** Space/Enter does NOT advance to Stage 2. Stage 2 remains strictly unplayable until authorized in future milestones.
+- **Stage Checkpoint & Revive:**
+  - Death in Level 5 calls `_on_player_died()` (displays `SHIP DESTROYED (STAGE 1 / LEVEL 5)`).
+  - Checkpoint revive (via 'R' or `revive_at_stage_checkpoint()`) returns strictly to **Stage 1 Level 1** at full 12 HP.
+  - Survival timer resets to 30.0s.
+  - All stage acquisitions cleared (`primary_weapon_acquired`, `shield_acquired`, `stage1_completed`, satellite telemetry).
+  - Weapons disabled in Level 1; all active entities and derelicts cleared.
 
 

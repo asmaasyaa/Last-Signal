@@ -1,13 +1,13 @@
-# LAST SIGNAL — Asset Requests & Technical Feedback for Art Team (Batch 02 Review)
+# LAST SIGNAL — Asset Requests & Technical Feedback for Art Team (Milestone 5 Review)
 
-**Document Version:** 2.0 (Milestone 3.7)  
+**Document Version:** 2.1 (Milestone 5)  
 **Batch Reviewed:** `Komgraf — Teh Hijau-20261121T151257Z-1-001.zip` (Batch 02)  
 **Engine Reference:** Godot Engine 4.7.2 Standard  
 **Viewport Reference:** $1280 \times 720\text{ px}$ (16:9 2D space environment)
 
 ---
 
-## 1. Appreciation & Batch 02 Delivery Summary
+## 1. Appreciation & Delivery Summary
 
 Thank you to the art team for the delivery of **Batch 02** (`Komgraf — Teh Hijau`).
 
@@ -27,6 +27,9 @@ We have successfully processed all 44 delivered files (35 unchanged originals + 
 3. **Nirawak 1 Spacecraft (2 assets): IMPORTED & AWAITING CONFIRMATION**
    - Staged in `res://assets/sprites/npc/nirawak1/` preserving both `before-extraction.png` and `after-extraction.png`.
    - Visual relationship preserved without inventing unconfirmed narrative roles.
+4. **Milestone 5 New Entities (Procedural Fallback Active):**
+   - **Mining Survey Satellite (`scenes/mining_satellite.tscn`):** High-detail procedural industrial vector sprite (bronze/ochre chassis, cyan telemetry dish, solar arrays, beacon glow) is actively serving as fallback. Official art slot prepared under `Visuals/OfficialArt/Sprite2D`.
+   - **Damaged Mining Vessel (`scenes/damaged_mining_ship.tscn`):** Procedural heavy industrial vessel with dual ore processing pods, heavy cutting laser gantry, animated hull breach electrical sparks, and pulsing amber SOS beacon. Official art slot prepared under `Visuals/OfficialArt/Sprite2D`.
 
 ---
 
@@ -36,10 +39,10 @@ We have successfully processed all 44 delivered files (35 unchanged originals + 
 - **Delivered Assets:** `nirawak1/before-extraction.png` ($870 \times 303\text{px}$) and `nirawak1/after-extraction.png` ($870 \times 303\text{px}$).
 - **Status:** **AWAITING TEAM CONFIRMATION**
 - **Question for the Team:** Which in-game entity and level do these sprites represent?
-  - Option A: The derelict/wrecked spacecraft encountered at the end of Stage 1 Level 3.
-  - Option B: The damaged mining vessel mentioned in the decrypted satellite telemetry for Stage 1 Level 5.
+  - Option A: The derelict/wrecked scout craft (`Surveyor-7`) encountered at the end of Stage 1 Level 3.
+  - Option B: The damaged mining vessel encountered at the end of Stage 1 Level 5 that broadcasts the automated SOS pointing to Stage 2.
   - Option C: A distinct NPC vessel or player-controlled transport for later stages.
-- **Engineering Safety Guarantee:** Until officially confirmed, existing procedural visuals for the Level 3 wrecked spacecraft remain active. No story text, dialogue, or gameplay triggers have been assumed.
+- **Engineering Safety Guarantee:** Until officially confirmed, existing procedural visuals for the Level 3 wrecked spacecraft and Level 5 damaged mining vessel remain active. No story text, dialogue, or gameplay triggers have been assumed without authorization.
 
 ### 2.2 Stage 2 Level 3 Button Canvas Anomaly (Action Required: High)
 - **Delivered Asset:** `assets/UI HUI/stage btn/Stage 2/L3.png`

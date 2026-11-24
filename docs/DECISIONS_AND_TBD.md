@@ -138,3 +138,29 @@ This document tracks unresolved balance parameters, provisional features, and pe
      - No secondary weapons (missiles, bombs, EM jammers).
      - No asteroid item drops or arcade scoring counters.
 - **Status:** **Configurable Baseline / Subject to Lead Playtesting.**
+
+---
+
+## 11. Milestone 5 Level 5 Configurable Parameters & Narrative Interface Decisions
+
+- **Mechanic Overview:** Stage 1 Level 5 completes Stage 1 gameplay, featuring the final dense asteroid sector, active twin-barrel shooting, an optional mining survey satellite proximity extraction, and an encounter with a drifting damaged mining vessel emitting an automated SOS pointing toward Stage 2.
+- **Configurable Parameters in Code (`scripts/main.gd` & `scripts/mining_satellite.gd`):**
+  1. **Level 5 Asteroid Density:** `@export var l5_spawn_interval_min: float = 0.85`, `@export var l5_spawn_interval_max: float = 1.50` (provisional average interval 1.175s, ~0.85 asteroids/s; densest sector requiring active shooting to carve navigational corridors).
+  2. **Level 5 Asteroid Distribution:** `@export var l5_small_ratio: float = 0.30` (30% Small), `@export var l5_medium_ratio: float = 0.40` (40% Medium), `@export var l5_large_ratio: float = 0.30` (30% Large).
+  3. **Mining Satellite Scheduling & Mechanics:**
+     - `@export var l5_satellite_spawn_time: float = 20.0` (spawns once when 20s or fewer remain).
+     - `@export var drift_speed: float = 95.0` px/s downward.
+     - `@export var extraction_time: float = 1.8` seconds of continuous proximity presence.
+     - `@export var extraction_radius: float = 80.0` px (`CircleShape2D`, unscaled root).
+  4. **Damaged Mining Vessel Presentation:**
+     - Positioned at `Vector2(640.0, 210.0)` with floating bobbing oscillation.
+     - Procedural visual fallback implemented (`scripts/damaged_mining_ship.gd`) with heavy industrial silhouette, cargo pods, cutting laser mount, hull breach electrical sparks, and pulsing amber SOS beacon.
+     - `nirawak1/before-extraction.png` and `after-extraction.png` remain unassigned until officially confirmed by art and narrative leads.
+  5. **Stage 1 Completion & Signal Architecture:**
+     - Surviving 30 seconds disables weapon firing and emits `distress_sos_received(payload)` and `stage_completed(payload)`.
+     - Recorded in `stage_acquisitions["stage1_completed"] = true` and `stage_acquisitions["mining_ship_encountered"] = true`.
+     - Stage 2 remains strictly unplayable; no fake Stage 2 scenes or transitions.
+  6. **Stage Checkpoint Revive:**
+     - Death in Level 5 returns strictly to Stage 1 Level 1 at full 12 HP.
+     - All temporary stage acquisitions (telemetry, weapon, shield, stage1_completed) cleared.
+- **Status:** **Configurable Baseline / Subject to Lead Review during playtesting.**
