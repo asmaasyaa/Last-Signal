@@ -164,3 +164,34 @@ This document tracks unresolved balance parameters, provisional features, and pe
      - Death in Level 5 returns strictly to Stage 1 Level 1 at full 12 HP.
      - All temporary stage acquisitions (telemetry, weapon, shield, stage1_completed) cleared.
 - **Status:** **Configurable Baseline / Subject to Lead Review during playtesting.**
+
+
+---
+
+## 12. Milestone 6 Stage 2 Level 1 Configurable Parameters & Hostile Combat TBDs
+
+- **Mechanic Overview:** Stage 2 Level 1 transitions LAST SIGNAL into horizontal side-scrolling combat, introducing the Guard Bot enemy automaton, aimed enemy projectiles, 15s survival objective, and independent Stage 2 checkpoint revive.
+- **Configurable Parameters in Code (`scripts/stage2/stage2_main.gd`, `scripts/enemies/guard_bot.gd`, `scripts/enemies/enemy_projectile.gd`):**
+  1. **Arena & Scrolling Tuning:**
+     - `@export var scroll_speed: float = 140.0` px/s (horizontal starfield drift speed from right to left).
+     - `@export var level_duration: float = 15.0` seconds (confirmed Stage 2 Level 1 survival objective).
+  2. **Enemy Spawner Tuning:**
+     - `@export var enemy_spawn_interval_min: float = 2.0` seconds.
+     - `@export var enemy_spawn_interval_max: float = 3.2` seconds.
+     - Spawns Guard Bots at $X = 1320.0\text{ px}$ with randomized $Y \in [80.0, 640.0]\text{ px}$.
+  3. **Guard Bot Automaton Parameters:**
+     - `@export var max_health: int = 30` (requires 30 player projectile hits or mutual contact).
+     - `@export var speed: float = 130.0` px/s (leftward horizontal drift velocity).
+     - `@export var contact_damage: int = 1` HP (inflicts 1 damage to player; takes 1 damage in return).
+     - `@export var fire_interval_min: float = 1.8` seconds, `@export var fire_interval_max: float = 2.4` seconds.
+     - `@export var attack_pose_duration: float = 0.35` seconds (attacking sprite visibility duration).
+     - `@export var official_art_enabled: bool = true` (uses official `idle.png` and `attacking.png`).
+  4. **Enemy Projectile Parameters:**
+     - `@export var speed: float = 300.0` px/s (linear velocity towards player).
+     - `@export var damage: int = 1` HP.
+     - `@export var lifetime: float = 4.0` seconds.
+  5. **Stage 2 Checkpoint & Progression Semantics:**
+     - Stage transition restores player HP to full $12\text{ HP}$ ($12/12$).
+     - Death in Stage 2 Level 1 revives player strictly at **Stage 2 Level 1** at full $12\text{ HP}$ with weapons active.
+     - Surviving 15 seconds displays completion banner; Level 2 cannot start.
+- **Status:** **Configurable Baseline / Subject to Lead Review during playtesting.**

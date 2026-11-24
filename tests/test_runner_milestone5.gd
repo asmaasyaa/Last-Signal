@@ -355,7 +355,7 @@ func test_suite_d_stage1_completion_and_mining_ship_sos() -> void:
 		assert_eq(sc.get("stage", 0), 1, "stage is 1")
 		assert_eq(sc.get("levels_cleared", 0), 5, "levels_cleared is 5")
 		assert_eq(sc.get("next_stage", 0), 2, "next_stage is 2")
-		assert_eq(sc.get("next_stage_available", true), false, "next_stage_available is false (no fake Stage 2)")
+		assert_eq(sc.get("next_stage_available", false), true, "next_stage_available is true (Stage 2 authorized in M6)")
 
 	# 3. Check stage_acquisitions and helper methods
 	assert_true(main.is_stage1_completed(), "Main reports is_stage1_completed() == true")
@@ -380,18 +380,18 @@ func test_suite_d_stage1_completion_and_mining_ship_sos() -> void:
 	assert_true("STAGE 1 COMPLETE!" in main.message.text, "Banner announces STAGE 1 COMPLETE!")
 	assert_true("[DISTRESS BEACON INTERCEPTED: Damaged Mining Vessel]" in main.message.text, "Banner mentions distress beacon intercepted")
 	assert_true("[TRANSMISSION: Automated SOS Received]" in main.message.text, "Banner mentions transmission received")
-	assert_true("[STAGE 1 COMPLETE — PROTOTYPE FINISHED]" in main.message.text, "Banner indicates prototype is finished")
+	assert_true("Press [Space/Enter] to advance to Stage 2" in main.message.text, "Banner invites player to advance to Stage 2")
 	assert_true("Press [R] to replay Stage 1 from Checkpoint" in main.message.text, "Banner indicates checkpoint replay option")
 
-	# 6. Space/Enter does NOT advance beyond Stage 1 (no fake Stage 2)
-	var space_event = InputEventKey.new()
-	space_event.pressed = true
-	space_event.keycode = KEY_SPACE
-	main._unhandled_key_input(space_event)
-	await get_tree().process_frame
-	assert_eq(main.current_level, 5, "Space/Enter does NOT advance to unimplemented Stage 2")
+	# 6. Space/Enter transitions to Stage 2 Level 1
+	var stage2_node = main.advance_to_stage_2()
+	assert_true(is_instance_valid(stage2_node), "advance_to_stage_2() returns instantiated Stage 2 node")
+	if is_instance_valid(stage2_node):
+		assert_eq(stage2_node.stage_number, 2, "Stage 2 node stage_number is 2")
+		assert_eq(stage2_node.current_level, 1, "Stage 2 node current_level is 1")
+		stage2_node.queue_free()
 
-	# 7. Player death in Level 5 does NOT trigger completion
+	# 7. Player death in Level 5 does NOT trigger completion or Stage 2 transition
 	main.stage_acquisitions.clear()
 	main.start_level(5, 12)
 	main._on_player_died()
@@ -399,6 +399,8 @@ func test_suite_d_stage1_completion_and_mining_ship_sos() -> void:
 	assert_false(main.game_won, "game_won is false on player death")
 	assert_false(main.is_stage1_completed(), "Stage 1 not completed on player death")
 	assert_true("SHIP DESTROYED (STAGE 1 / LEVEL 5)" in main.message.text, "Death banner shows correct level")
+	var dead_advance = main.advance_to_stage_2()
+	assert_true(dead_advance == null, "Dead player cannot advance to Stage 2")
 
 	main.queue_free()
 

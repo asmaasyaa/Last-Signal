@@ -1,0 +1,37 @@
+[gd_scene load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://scripts/enemies/guard_bot.gd" id="1_bot"]
+[ext_resource type="Texture2D" path="res://assets/sprites/enemies/guard_bot/guard_bot_idle.png" id="2_idle"]
+[ext_resource type="Texture2D" path="res://assets/sprites/enemies/guard_bot/guard_bot_attacking.png" id="3_atk"]
+[ext_resource type="Script" path="res://scripts/enemies/guard_bot_visual.gd" id="4_visual"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_bot"]
+radius = 24.0
+
+[node name="GuardBot" type="Area2D"]
+collision_layer = 18
+collision_mask = 5
+script = ExtResource("1_bot")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("CircleShape2D_bot")
+
+[node name="Visuals" type="Node2D" parent="."]
+
+[node name="ProceduralFallback" type="Node2D" parent="Visuals"]
+script = ExtResource("4_visual")
+
+[node name="OfficialArt" type="Node2D" parent="Visuals"]
+
+[node name="IdleSprite" type="Sprite2D" parent="Visuals/OfficialArt"]
+rotation = -1.5708
+scale = Vector2(0.45, 0.45)
+texture = ExtResource("2_idle")
+centered = true
+
+[node name="AttackingSprite" type="Sprite2D" parent="Visuals/OfficialArt"]
+visible = false
+rotation = -1.5708
+scale = Vector2(0.45, 0.45)
+texture = ExtResource("3_atk")
+centered = true

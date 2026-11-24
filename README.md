@@ -1,43 +1,42 @@
-# LAST SIGNAL - Godot Prototype (Milestone 5 — Final Asteroid Sector & Mining Ship SOS)
+# LAST SIGNAL - Godot Prototype (Milestone 6 — Stage 2 Level 1: Side-Scrolling & First Hostile Contact)
 
-> **Development Status:** WIP — Milestone 5 implemented, manual GUI QA pending.  
-> A verified 2D space SHMUP prototype in Godot 4.7.2 completing the entirety of Stage 1 (Levels 1–5), featuring twin-barrel primary weapon firing, asteroid combat and multi-hit destruction, optional communication and mining satellite extraction, equipment acquisition, damaged mining vessel distress SOS transmission, official team art integration (Batch 01 & Batch 02), modular menu UI, and comprehensive automated regression tests (815/815 passing tests).
+> **Development Status:** WIP — Milestone 6 implemented, manual GUI QA pending.  
+> A verified 2D space SHMUP prototype in Godot 4.7.2 featuring Stage 1 (Levels 1–5) and Stage 2 Level 1, introducing horizontal side-scrolling gameplay, Guard Bot security automata with official artwork and procedural fallback, aimed enemy projectiles, 15-second survival objective, full HP restoration upon entering Stage 2, independent Stage 2 checkpoint revival, and comprehensive automated regression tests (963/963 passing assertions across 9 test suites).
 
 ## Setup
 
 1. Download **Godot 4.7.2 stable — Standard** from https://godotengine.org/download/ (not .NET).
 2. Extract the starter ZIP to a local folder.
 3. In Godot Project Manager, click **Import**, locate this folder's `project.godot`, and open it.
-4. Press **F6** from `scenes/main.tscn` (direct gameplay) or `scenes/ui/main_menu.tscn` (menu flow), or **F5** to start.
-5. Move the mouse to steer the ship. Stay alive for 30 seconds. Press **R** to restart, **Esc** to quit.
+4. Press **F6** from `scenes/main.tscn` (Stage 1 direct gameplay), `scenes/stage2/stage2_main.tscn` (Stage 2 direct gameplay), or `scenes/ui/main_menu.tscn` (menu flow), or **F5** to start.
+5. Move the mouse to steer the ship. In Stage 1, evade/destroy asteroids for 30 seconds. In Stage 2 Level 1, survive the hostile sector for 15 seconds against Guard Bots. Press **R** to restart/revive, **Esc** to quit.
 
-## Current Prototype Implementation Status (Milestone 5 — Stage 1 Complete)
+## Current Prototype Implementation Status (Milestone 6 — Stage 2 Level 1)
 
-- **Stage 1 Levels 1–5:** Full Stage 1 gameplay completed across five 30-second survival and combat sectors with persistent HP, stage checkpoint revival, and progressive challenges:
+- **Stage 1 (Levels 1–5 Complete):**
   - **Level 1:** Unarmed navigation & evasion through small asteroids.
   - **Level 2:** Mixed asteroid belt with optional communication satellite telemetry recovery (`sat_telemetry_01`).
   - **Level 3:** Deep asteroid belt with large hazard rocks; post-survival recovery of twin-barrel pulse cannon and deflector shield from derelict scout craft (`Surveyor-7`).
   - **Level 4:** Twin-barrel combat deployment (12 shots/s, 1 dmg) against multi-hit destructible asteroids.
-  - **Level 5:** Final high-density asteroid sector with twin-barrel combat, optional mining survey satellite extraction (`mining_sat_telemetry_01`), and dramatic encounter with a drifting damaged mining vessel broadcasting an automated SOS pointing toward Stage 2.
-- **Twin-Barrel Primary Weapon (Levels 4 & 5):**
-  - Left Mouse Button continuous firing at 6 volleys/s (12 projectiles/s total), dealing 1 damage per hit.
-  - Dual muzzle lateral separation (±12 px lateral, +24 px forward) generating parallel forward trajectories aligned with player facing rotation.
-  - Inoperable during Levels 1–3; activated strictly upon entering combat levels with acquired equipment.
-- **Optional Proximity Satellites:**
-  - **Communication Satellite (Level 2):** Proximity radius 80 px, drift speed 100 px/s, 1.5s extraction time, official `commsatt.png` art with dual overlay indicator rings.
-  - **Mining Survey Satellite (Level 5):** Proximity radius 80 px, drift speed 95 px/s, 1.8s extraction time, procedural industrial aesthetic with orange-amber solar panels and survey dish.
-  - Satellites are strictly optional bonus telemetry; missing them does not fail the run.
-- **Damaged Mining Vessel & Stage 1 Ending:**
-  - Surviving 30 seconds in Level 5 concludes Stage 1.
-  - Instantiates damaged mining vessel at $(640, 210)$ with heavy industrial silhouette, cargo pods, hull breach electrical sparks, and pulsing amber distress beacon.
-  - Disables weapon firing and emits `distress_sos_received` and `stage_completed` signals for future narrative integration.
-  - No fake Stage 2 scenes or transitions; prototype cleanly finishes Stage 1.
-- **Official Team Art (Batch 01 & Batch 02):**
-  - **Player Ship:** `player_alive.png` and `player_dead.png` integrated into `player.tscn` with dynamic state switching.
-  - **Communication Satellite:** Official `commsatt.png` integrated into `satellite.tscn` with procedural fallback.
-  - **Modular UI:** Main Menu and Level Select UI integrated using official team button textures with progression gating.
-  - **Staged & Reserved Assets:** Guard enemies, mini-boss, boss, and overheat label cataloged and reserved for future stages.
-- **Stage Checkpoint Revive:** Death in any level (Levels 1–5) returns strictly to Stage 1 Level 1 with 12 HP, resetting stage acquisitions, equipment, and disabling weapons.
+  - **Level 5:** Final high-density asteroid sector with twin-barrel combat, optional mining survey satellite extraction (`mining_sat_telemetry_01`), and encounter with a drifting damaged mining vessel broadcasting an automated SOS pointing toward Stage 2.
+- **Stage 2 Level 1 (Side-Scrolling & First Hostile Contact):**
+  - **Horizontal Side-Scrolling:** Arena shifts from vertical dodging to horizontal scrolling. Deep space starfield moves right-to-left at $140.0\text{ px/s}$ (`scroll_speed`).
+  - **15-Second Survival Objective:** Sector incursion duration is strictly 15.0 seconds (`level_duration = 15.0`). Surviving 15 seconds completes the level without requiring all enemies to be destroyed.
+  - **Stage Transition & Restoration:** Advancing from Stage 1 Level 5 restores player HP to full $12\text{ HP}$ ($12/12$), retains acquired twin-barrel weapon and shield hardware, and enables weapons immediately.
+  - **Guard Bot Security Automaton (`scenes/enemies/guard_bot.tscn`):**
+    - Multi-hit combat target with $30\text{ HP}$ (`max_health = 30`), taking 1 damage per player projectile.
+    - Drifts horizontally leftward at $130.0\text{ px/s}$.
+    - Collision Layer 18 (Layer 2 `[2]` Combat Target | Layer 5 `[16]` Enemies), Mask 5 (Layer 1 `[1]` Player | Layer 3 `[4]` Player Projectiles).
+    - Integrated official `idle.png` and `attacking.png` sprites ($256 \times 256$) scaled $0.45\times$, rotated $-90^\circ$ to face leftward, with geometric procedural fallback.
+    - Mutual contact damage: Deals 1 damage to player and takes 1 damage in return, rate-limited by $0.5\text{s}$ independent contact pair cooldowns.
+    - Aimed weapon attack: Periodically fires normal enemy projectiles towards the player every $1.8\text{s} - 2.4\text{s}$, triggering an attacking sprite pose for $0.35\text{s}$.
+  - **Enemy Projectiles (`scenes/enemies/enemy_projectile.tscn`):**
+    - Collision Layer 32 (Layer 6: Enemy Projectiles), Mask 1 (Layer 1: Player).
+    - Linear velocity $300.0\text{ px/s}$, dealing 1 HP damage per hit to player.
+    - Friendly fire immunity: Ignores Guard Bots and friendly units.
+    - Double-hit protection and safe despawn on playfield boundary margins ($X < -60$, $X > 1340$, $Y < -60$, $Y > 780$) or lifetime ($4.0\text{s}$).
+  - **Stage 2 Checkpoint Revive:** Death in Stage 2 Level 1 revives player strictly at **Stage 2 Level 1** at full $12\text{ HP}$ with weapons active. Does NOT send player back to Stage 1.
+  - **Milestone Scope Boundary:** Surviving 15 seconds completes Stage 2 Level 1. Stage 2 Level 2 cannot be started.
 
 ## Project files
 
@@ -58,7 +57,7 @@ assets/
   sprites/
     player/                    # Official player sprites (alive, dead)
     interactables/             # Communication satellite (commsatt.png)
-    enemies/                   # Stage 2 guard assets (bot, satellite, drone - reserved)
+    enemies/                   # Stage 2 guard assets (bot, satellite, drone)
     npc/                       # Nirawak 1 assets (awaiting confirmation)
     bosses/
       stage2_miniboss/         # Stage 2 mini-boss assets (reserved)
@@ -67,7 +66,7 @@ assets/
     buttons/                   # Main menu & Stage 1-3 level select buttons
     labels/                    # Overheat UI label (reserved)
 scenes/
-  main.tscn
+  main.tscn                    # Stage 1 Coordinator
   player.tscn
   asteroid.tscn
   projectile.tscn
@@ -75,6 +74,11 @@ scenes/
   mining_satellite.tscn
   wrecked_ship.tscn
   damaged_mining_ship.tscn
+  enemies/
+    guard_bot.tscn             # Guard Bot enemy automaton
+    enemy_projectile.tscn      # Enemy normal projectile
+  stage2/
+    stage2_main.tscn           # Stage 2 Main Coordinator
   ui/
     main_menu.tscn
     level_select.tscn
@@ -93,6 +97,13 @@ scripts/
   mining_satellite_visual.gd
   wrecked_ship.gd
   damaged_mining_ship.gd
+  enemies/
+    guard_bot.gd
+    guard_bot_visual.gd
+    enemy_projectile.gd
+    enemy_projectile_visual.gd
+  stage2/
+    stage2_main.gd
   ui/
     main_menu.gd
     level_select.gd
@@ -113,6 +124,8 @@ tests/
   test_runner_milestone4.gd
   test_milestone5.gd
   test_runner_milestone5.gd
+  test_milestone6.gd
+  test_runner_milestone6.gd
 project.godot
 README.md
 .gitignore
@@ -123,44 +136,46 @@ README.md
 Run the headless automated test suites via the local Godot 4.7.2 executable:
 
 ```bash
-# Milestone 1 verification suite (87 tests)
+# Milestone 1 verification suite (38 assertions)
 godot --headless -s tests/test_milestone1.gd
 
-# Milestone 2 verification suite (73 tests)
+# Milestone 2 verification suite (55 assertions)
 godot --headless -s tests/test_milestone2.gd
 
-# Milestone 3 verification suite (81 tests)
+# Milestone 3 verification suite (73 assertions)
 godot --headless -s tests/test_milestone3.gd
 
-# Milestone 3.5 verification suite (56 tests)
+# Milestone 3.5 verification suite (126 assertions)
 godot --headless -s tests/test_milestone3_5.gd
 
-# Milestone 3.6 verification suite (138 tests)
+# Milestone 3.6 verification suite (143 assertions)
 godot --headless -s tests/test_milestone3_6.gd
 
-# Milestone 3.7 verification suite (119 tests)
+# Milestone 3.7 verification suite (119 assertions)
 godot --headless -s tests/test_milestone3_7.gd
 
-# Milestone 4 verification suite (124 tests)
+# Milestone 4 verification suite (124 assertions)
 godot --headless -s tests/test_milestone4.gd
 
-# Milestone 5 verification suite (137 tests)
+# Milestone 5 verification suite (140 assertions)
 godot --headless -s tests/test_milestone5.gd
+
+# Milestone 6 verification suite (145 assertions)
+godot --headless -s tests/test_milestone6.gd
 ```
-Total baseline: **815 passing tests** across 8 test suites (0 failures).
+Total baseline: **963 passing assertions** across 9 test suites (0 failures).
 
-## Git collaboration
+## Git Collaboration
 
-- The shared repository is located at `https://github.com/asmaasyaa/last-signal`.
-- Active development branch for Milestone 5: `feature/stage1-level5`.
-- Stacked from: `feature/stage1-level4` (checkpoint commit `6af4363`).
+- Shared repository: `https://github.com/asmaasyaa/last-signal`.
+- Active development branch for Milestone 6: `feature/stage2-level1`.
+- Stacked from: `feature/stage1-level5` (checkpoint commit `5226f03`).
 
-## Stage 1 Progression (30s Arcade Survival & Combat)
+## Milestone Roadmap & Progression
 
-1. **Stage 1 Level 1:** Asteroid survival, no weapon (Completed in Milestone 1).
-2. **Stage 1 Level 2:** Asteroid survival, no weapon, optional communication satellite extraction (Completed in Milestone 2).
-3. **Stage 1 Level 3:** Asteroid survival, no weapon; acquire primary weapon and shield after completing this level (Completed in Milestone 3).
-4. **Stage 1 Level 4:** Twin-barrel shooting combat deployment against destructible asteroids (Completed in Milestone 4).
-5. **Stage 1 Level 5:** Final asteroid sector combat, optional mining survey satellite telemetry recovery, and damaged mining vessel distress SOS encounter concluding Stage 1 (Completed in Milestone 5).
-4. **Stage 1 Level 4:** Asteroid combat with twin-barrel shooting and multi-hit destructible asteroids (Completed in Milestone 4).
-5. **Stage 1 Level 5:** Asteroid survival with weapon and shield; encounter damaged mining vessel NPC and receive Stage 2 coordinates.
+1. **Stage 1 Level 1:** Unarmed asteroid survival (Milestone 1).
+2. **Stage 1 Level 2:** Asteroid evasion, optional communication satellite extraction (Milestone 2).
+3. **Stage 1 Level 3:** Deep belt survival; acquire twin-barrel weapon and deflector shield (Milestone 3).
+4. **Stage 1 Level 4:** Twin-barrel shooting combat deployment against destructible asteroids (Milestone 4).
+5. **Stage 1 Level 5:** Final asteroid sector combat, mining satellite extraction, damaged mining ship SOS (Milestone 5).
+6. **Stage 2 Level 1:** Side-scrolling shift, Guard Bot hostile automata, aimed enemy projectiles, 15s survival (Milestone 6).

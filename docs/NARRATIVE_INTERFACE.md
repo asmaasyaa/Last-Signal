@@ -149,3 +149,19 @@ With Milestone 5 implemented, the following additional narrative event hooks are
 > [!IMPORTANT]
 > All AI-generated narrative descriptions, distress message logs, and ship identifiers remain **NON-CANONICAL PLACEHOLDERS** until approved by official project narrative leads.
 
+
+---
+
+## 6. Stage 2 Level 1 Semantic Dialogue Event Hooks (Milestone 6)
+
+With Milestone 6 introducing hostile security automata, the following semantic event IDs are available for dialogue system integration:
+
+| Event ID | Trigger Timing | Associated Payload / Context |
+| :--- | :--- | :--- |
+| `stage2_l1_incursion_started` | Stage 2 Level 1 startup / entry from Stage 1 | Sector inner perimeter coordinates, 15s survival objective |
+| `stage2_l1_guard_bot_contact` | First Guard Bot spawn or proximity | Automaton scan alert, weapons hot authorization |
+| `stage2_l1_guard_bot_destroyed` | Guard Bot destroyed by player | Combat kill confirmation, telemetry feedback |
+| `stage2_l1_completed` | Surviving 15s sector incursion | Sector breach cleared, perimeter defenses bypassed |
+
+> [!NOTE]
+> Like Stage 1 events, all Stage 2 narrative content remains non-canonical stubs until authored and approved by project writing leads.

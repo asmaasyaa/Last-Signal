@@ -341,13 +341,58 @@ The following mechanics are **NOT part of the approved Stage 1 design** and must
       }
       ```
   - **Completion Banner:**
-    `STAGE 1 COMPLETE!\nFinal Asteroid Sector Cleared (HP: %02d/%02d)\nTelemetry: Comm [%s] | Mining [%s]\n\n[DISTRESS BEACON INTERCEPTED: Damaged Mining Vessel]\n[TRANSMISSION: Automated SOS Received]\n(Coordinates point toward Stage 2)\n\n[STAGE 1 COMPLETE — PROTOTYPE FINISHED]\nPress [R] to replay Stage 1 from Checkpoint`
-  - **No Fake Stage 2:** Space/Enter does NOT advance to Stage 2. Stage 2 remains strictly unplayable until authorized in future milestones.
+    `STAGE 1 COMPLETE!\nFinal Asteroid Sector Cleared (HP: %02d/%02d)\nTelemetry: Comm [%s] | Mining [%s]\n\n[DISTRESS BEACON INTERCEPTED: Damaged Mining Vessel]\n[TRANSMISSION: Automated SOS Received]\n(Coordinates point toward Stage 2)\n\nPress [Space/Enter] to advance to Stage 2 (Inner Sector)\n[STAGE 1 COMPLETE — PROTOTYPE ADVANCING]\nPress [R] to replay Stage 1 from Checkpoint`
+  - **Milestone 6 Stage 2 Authorization:** With Milestone 6 authorized, pressing [Space/Enter] triggers `advance_to_stage_2()`, transitioning into `scenes/stage2/stage2_main.tscn`.
 - **Stage Checkpoint & Revive:**
   - Death in Level 5 calls `_on_player_died()` (displays `SHIP DESTROYED (STAGE 1 / LEVEL 5)`).
   - Checkpoint revive (via 'R' or `revive_at_stage_checkpoint()`) returns strictly to **Stage 1 Level 1** at full 12 HP.
   - Survival timer resets to 30.0s.
   - All stage acquisitions cleared (`primary_weapon_acquired`, `shield_acquired`, `stage1_completed`, satellite telemetry).
   - Weapons disabled in Level 1; all active entities and derelicts cleared.
+
+---
+
+## 14. Milestone 6: Stage 2 Level 1 — Side-Scrolling & First Hostile Contact
+
+- **Core Gameplay Paradigm Shift:**
+  - Moves from Stage 1 vertical dodging into horizontal side-scrolling arcade space combat.
+  - Background starfield scrolls horizontally at $140.0\text{ px/s}$ from right to left (`scroll_speed`).
+  - Viewport remains standard $1280 \times 720\text{ px}$.
+  - Player ship starts at side-scrolling spawn position $(240.0, 360.0)$ on the left sector of the viewport.
+- **Survival Objective:**
+  - Level duration is strictly 15.0 seconds (`level_duration = 15.0`).
+  - Surviving 15.0 seconds completes Stage 2 Level 1 (`game_won = true`, `finished = true`).
+  - Destruction of all enemies is NOT required to win; survival alone achieves sector clearance.
+- **Stage 1 to Stage 2 Transition:**
+  - Accessible via `advance_to_stage_2()` upon completing Stage 1 Level 5.
+  - Full HP restoration: Player health is restored to full $12\text{ HP}$ ($12/12$) upon entering Stage 2.
+  - Equipment retention: `primary_weapon_acquired = true` and `shield_acquired = true` persist from Stage 1.
+  - Weapon firing is immediately active on Stage 2 startup ($6\text{ volleys/s}$, $12\text{ shots/s}$, $1\text{ dmg/hit}$).
+  - Clean separation: Stage 1 asteroids, satellites, and wrecked mining vessels are completely cleared.
+- **Guard Bot Hostile Automaton (`scenes/enemies/guard_bot.tscn` / `scripts/enemies/guard_bot.gd`):**
+  - **HP & Multi-Hit Combat:** $30\text{ HP}$ (`max_health = 30`). Takes 1 damage per player projectile hit. Emits `damaged(amount, remaining_health)` and dies at $0\text{ HP}$ emitting `destroyed`.
+  - **Movement:** Drifts horizontally leftward across the screen at $130.0\text{ px/s}$ (`speed`).
+  - **Collision Layers:** Collision layer 18 (Layer 2 `[2]` Combat Target | Layer 5 `[16]` Enemies), collision mask 5 (Layer 1 `[1]` Player | Layer 3 `[4]` Player Projectiles).
+  - **Official Artwork:** Integrated official `assets/entities/guards/bot/idle.png` ($256 \times 256$) and `assets/entities/guards/bot/attacking.png` ($256 \times 256$) scaled $0.45\times$, rotated $-90^\circ$ to face leftward.
+  - **Procedural Fallback:** Armored geometric octagon with glowing red optical sensor and weapon pod, active when textures are unassigned.
+  - **Mutual Contact Damage:** Inflicts $1\text{ HP}$ damage to player on contact and takes $1\text{ HP}$ damage in return, governed by independent $0.5\text{s}$ contact pair cooldowns.
+  - **Aimed Weapon Attack:** Periodically aims and fires normal enemy projectiles towards the player every $1.8\text{s} - 2.4\text{s}$. Switches to attacking sprite pose for $0.35\text{s}$.
+  - **Offscreen Despawn:** Safe deletion when drifting past $X < -100.0\text{ px}$.
+- **Enemy Projectiles (`scenes/enemies/enemy_projectile.tscn` / `scripts/enemies/enemy_projectile.gd`):**
+  - **Collision Layers:** Collision layer 32 (Layer 6 `[32]` Enemy Projectiles), collision mask 1 (Layer 1 `[1]` Player).
+  - **Speed & Damage:** $300.0\text{ px/s}$ linear velocity along firing vector, dealing $1\text{ HP}$ damage per hit to player.
+  - **Target Filtering & Friendly Fire Immunity:** Ignores Guard Bots and friendly units; only damages player.
+  - **Double-Hit Protection:** `has_hit` flag ensures single damage application per projectile.
+  - **Despawn Conditions:** Despawns on player impact, lifetime expiration ($4.0\text{s}$), or boundary margin departure ($X < -60$, $X > 1340$, $Y < -60$, $Y > 780$).
+- **Stage 2 Checkpoint & Revival Semantics:**
+  - Death in Stage 2 Level 1 triggers `_on_player_died()` displaying `SHIP DESTROYED (STAGE 2 / LEVEL 1)`.
+  - Pressing [R] triggers `revive_at_stage_checkpoint()`, reviving player strictly at **Stage 2 Level 1** at full $12\text{ HP}$.
+  - Reviving in Stage 2 does **NOT** send the player back to Stage 1!
+  - Timer resets to 15.0s, active enemies and projectiles are cleared, and primary weapon remains active.
+  - Stage 1 checkpoint revive remains intact, reviving at Stage 1 Level 1 without weapons.
+- **Milestone Scope Boundary:**
+  - Stage 2 Level 1 completion displays victory banner: `STAGE 2 / LEVEL 1 COMPLETE!`.
+  - Stage 2 Level 2 cannot be started; no fake Level 2 scenes or transitions are implemented.
+
 
 

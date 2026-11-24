@@ -138,3 +138,22 @@ Milestone 4 introduces the reusable projectile system (`scenes/projectile.tscn`)
    - **Seamless Art Integration Ready:** When official blaster bolts or pulse effects are delivered, inserting `Visuals/OfficialArt/Sprite2D` or `AnimatedSprite2D` automatically suppresses the procedural fallback without altering projectile physics, speed, or collision checks.
 2. **Automated Verification Baseline:**
    - 678 total automated tests across 7 test suites (Milestones 1, 2, 3, 3.5, 3.6, 3.7, 4) passing with 0 failures.
+
+
+---
+
+## 8. Milestone 6: Stage 2 Level 1 Art Integration Results
+
+Milestone 6 integrated the first hostile security automaton artwork from Batch 02 into the active gameplay runtime:
+
+1. **Guard Bot Official Artwork Integration (`scenes/enemies/guard_bot.tscn`):**
+   - **Delivered Sprites:** `assets/entities/guards/bot/idle.png` ($256 \times 256\text{ px}$) and `assets/entities/guards/bot/attacking.png` ($256 \times 256\text{ px}$).
+   - **Visual Subtree Isolation:** Integrated into `scenes/enemies/guard_bot.tscn` under `Visuals/OfficialArt/IdleSprite` and `Visuals/OfficialArt/AttackingSprite`.
+   - **Scale & Orientation:** Scaled to $0.45 \times 0.45$ ($\approx 115 \times 115\text{ px}$) and rotated $-90^\circ$ to face leftward toward the player in the side-scrolling orientation. Root node maintains `scale = Vector2.ONE`.
+   - **State Switching:** `IdleSprite` displays during normal drift; `AttackingSprite` dynamically triggers for $0.35\text{s}$ upon firing aimed energy projectiles.
+   - **Procedural Fallback:** `Visuals/ProceduralFallback` (`scripts/enemies/guard_bot_visual.gd`) features a geometric armored octagon with glowing red optical sensor and weapon pod, cleanly hidden when official art is active.
+2. **Enemy Projectiles Visual Readiness (`scenes/enemies/enemy_projectile.tscn`):**
+   - Procedural glowing plasma energy bolt (`Visuals/ProceduralFallback`) draws a luminous amber/red energy sphere with trailing plasma corona.
+   - Official art slot prepared under `Visuals/OfficialArt/Sprite2D`.
+3. **Automated Verification Baseline:**
+   - 963 total automated assertions across 9 test suites (Milestones 1, 2, 3, 3.5, 3.6, 3.7, 4, 5, 6) passing with 0 failures.

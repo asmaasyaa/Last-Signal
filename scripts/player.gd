@@ -30,6 +30,7 @@ var target_position_override: Variant = null # Optional Vector2 override for aut
 
 
 func _ready() -> void:
+	add_to_group("player")
 	# If running under Milestone 3.5 test runner specifically, defer to pre-art fallback testing
 	if is_inside_tree() and get_tree().root.has_node("TestRunnerMilestone3_5"):
 		official_art_enabled = false

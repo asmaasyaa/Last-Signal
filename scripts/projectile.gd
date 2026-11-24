@@ -19,7 +19,7 @@ var elapsed_time: float = 0.0
 func _ready() -> void:
 	add_to_group("projectiles")
 	collision_layer = 4 # Layer 3: Player Projectiles
-	collision_mask = 2  # Layer 2: Asteroids
+	collision_mask = 2  # Layer 2: Asteroids / Target Hazards
 	monitoring = true
 	monitorable = true
 	area_entered.connect(_on_area_entered)
@@ -42,7 +42,7 @@ func _on_area_entered(area: Area2D) -> void:
 		return
 	if not is_instance_valid(area) or area.is_queued_for_deletion():
 		return
-	if not area.is_in_group("asteroids"):
+	if not (area.is_in_group("asteroids") or area.is_in_group("enemies")):
 		return
 	if "is_destroyed" in area and area.is_destroyed:
 		return

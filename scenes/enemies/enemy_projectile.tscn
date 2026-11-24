@@ -1,0 +1,21 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/enemies/enemy_projectile.gd" id="1_proj"]
+[ext_resource type="Script" path="res://scripts/enemies/enemy_projectile_visual.gd" id="2_visual"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_proj"]
+radius = 6.0
+
+[node name="EnemyProjectile" type="Area2D"]
+collision_layer = 32
+collision_mask = 1
+script = ExtResource("1_proj")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("CircleShape2D_proj")
+
+[node name="Visuals" type="Node2D" parent="."]
+
+[node name="ProceduralFallback" type="Node2D" parent="Visuals"]
+script = ExtResource("2_visual")
+

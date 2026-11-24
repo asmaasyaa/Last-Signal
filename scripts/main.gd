@@ -11,6 +11,7 @@ const SATELLITE_SCENE: PackedScene = preload("res://scenes/satellite.tscn")
 const MINING_SATELLITE_SCENE: PackedScene = preload("res://scenes/mining_satellite.tscn")
 const WRECKED_SHIP_SCENE: PackedScene = preload("res://scenes/wrecked_ship.tscn")
 const DAMAGED_MINING_SHIP_SCENE: PackedScene = preload("res://scenes/damaged_mining_ship.tscn")
+const STAGE2_MAIN_SCENE: PackedScene = preload("res://scenes/stage2/stage2_main.tscn")
 
 @export var stage_number: int = 1
 @export var current_level: int = 1
@@ -553,7 +554,7 @@ func _complete_level() -> void:
 				"stage": 1,
 				"levels_cleared": 5,
 				"next_stage": 2,
-				"next_stage_available": false
+				"next_stage_available": true
 			}
 
 			stage_acquisitions["stage1_completed"] = true
@@ -566,7 +567,7 @@ func _complete_level() -> void:
 
 			var comm_str := "SUCCESS (Telemetry Recovered)" if satellite_extracted else "MISSED (Satellite Drifted Away)"
 			var min_str := "SUCCESS (Telemetry Recovered)" if mining_satellite_extracted else "MISSED (Satellite Drifted Away)"
-			message.text = "STAGE 1 COMPLETE!\nFinal Asteroid Sector Cleared (HP: %02d/%02d)\nTelemetry: Comm [%s] | Mining [%s]\n\n[DISTRESS BEACON INTERCEPTED: Damaged Mining Vessel]\n[TRANSMISSION: Automated SOS Received]\n(Coordinates point toward Stage 2)\n\n[STAGE 1 COMPLETE — PROTOTYPE FINISHED]\nPress [R] to replay Stage 1 from Checkpoint" % [
+			message.text = "STAGE 1 COMPLETE!\nFinal Asteroid Sector Cleared (HP: %02d/%02d)\nTelemetry: Comm [%s] | Mining [%s]\n\n[DISTRESS BEACON INTERCEPTED: Damaged Mining Vessel]\n[TRANSMISSION: Automated SOS Received]\n(Coordinates point toward Stage 2)\n\nPress [Space/Enter] to advance to Stage 2 (Inner Sector)\n[STAGE 1 COMPLETE — PROTOTYPE ADVANCING]\nPress [R] to replay Stage 1 from Checkpoint" % [
 				player.health, player.max_health, comm_str, min_str
 			]
 	_update_debug_overlay()
@@ -587,8 +588,21 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		elif event.keycode == KEY_SPACE or event.keycode == KEY_ENTER:
 			if finished and game_won and (current_level >= 1 and current_level <= 4):
 				advance_to_next_level()
+			elif finished and game_won and current_level == 5:
+				advance_to_stage_2()
 		elif event.keycode == KEY_ESCAPE:
 			get_tree().quit()
+
+
+func advance_to_stage_2() -> Node:
+	if not (finished and game_won and current_level == 5):
+		return null
+	var stage2_inst = STAGE2_MAIN_SCENE.instantiate()
+	if stage2_inst.has_method("initialize_from_stage1"):
+		stage2_inst.initialize_from_stage1(stage_acquisitions)
+	if is_inside_tree() and get_tree().current_scene == self:
+		get_tree().change_scene_to_file("res://scenes/stage2/stage2_main.tscn")
+	return stage2_inst
 
 
 func is_stage1_completed() -> bool:

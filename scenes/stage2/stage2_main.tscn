@@ -1,0 +1,38 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/stage2/stage2_main.gd" id="1_stage2_main"]
+[ext_resource type="PackedScene" path="res://scenes/player.tscn" id="2_player"]
+[ext_resource type="Script" path="res://scripts/weapon_controller.gd" id="3_weapon"]
+
+[node name="Stage2Main" type="Node2D"]
+script = ExtResource("1_stage2_main")
+
+[node name="Player" parent="." instance=ExtResource("2_player")]
+position = Vector2(240, 360)
+
+[node name="WeaponController" type="Node" parent="."]
+script = ExtResource("3_weapon")
+
+[node name="Projectiles" type="Node2D" parent="."]
+
+[node name="EnemyProjectiles" type="Node2D" parent="."]
+
+[node name="Enemies" type="Node2D" parent="."]
+
+[node name="HUD" type="CanvasLayer" parent="."]
+
+[node name="Info" type="Label" parent="HUD"]
+offset_left = 20.0
+offset_top = 14.0
+offset_right = 1000.0
+offset_bottom = 60.0
+text = "STAGE 2 / LEVEL 1"
+
+[node name="Message" type="Label" parent="HUD"]
+offset_left = 200.0
+offset_top = 270.0
+offset_right = 1080.0
+offset_bottom = 470.0
+horizontal_alignment = 1
+vertical_alignment = 1
+
