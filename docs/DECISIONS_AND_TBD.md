@@ -195,3 +195,31 @@ This document tracks unresolved balance parameters, provisional features, and pe
      - Death in Stage 2 Level 1 revives player strictly at **Stage 2 Level 1** at full $12\text{ HP}$ with weapons active.
      - Surviving 15 seconds displays completion banner; Level 2 cannot start.
 - **Status:** **Configurable Baseline / Subject to Lead Review during playtesting.**
+
+
+---
+
+## 13. Milestone 7 Stage 2 Level 2 Configurable Parameters & Accurate Laser TBDs
+
+- **Mechanic Overview:** Stage 2 Level 2 introduces the Guard Satellite enemy, telegraph-based accurate laser attacks, Level 1 -> Level 2 progression with HP persistence, 20s survival objective, and Stage 2 checkpoint restart.
+- **Configurable Parameters in Code (`scripts/stage2/stage2_main.gd`, `scripts/enemies/guard_satellite.gd`, `scripts/enemies/guard_satellite_laser_visual.gd`):**
+  1. **Level Duration & Spawning:**
+     - `@export var level_duration: float = 20.0` seconds (confirmed Stage 2 Level 2 survival objective).
+     - `@export var satellite_spawn_interval_min: float = 3.0` seconds.
+     - `@export var satellite_spawn_interval_max: float = 4.0` seconds.
+     - Spawns Guard Satellites from offscreen right ($X = 1320.0\text{ px}$, $Y \in [90.0, 630.0]\text{ px}$).
+  2. **Guard Satellite Parameters:**
+     - `@export var max_health: int = 20` (requires 20 player projectile hits).
+     - `@export var speed: float = 90.0` px/s (leftward drift velocity; slightly heavier/slower than Guard Bot).
+     - `@export var contact_damage: int = 1` HP (mutual contact with 0.5s cooldown).
+  3. **Accurate Laser System Tuning:**
+     - `@export var telegraph_duration: float = 0.5` seconds (aiming warning telegraph line).
+     - `@export var laser_duration: float = 0.15` seconds (active high-energy laser beam).
+     - `@export var fire_interval_min: float = 2.2` seconds, `@export var fire_interval_max: float = 3.2` seconds.
+     - `@export var laser_damage: int = 1` HP per laser attack event.
+     - Beam length: 1400.0 px, beam hit collision thickness: 12.0 px.
+  4. **State Persistence Rules:**
+     - HP persists across levels within Stage 2 (Level 1 -> Level 2 preserves HP without restoration).
+     - Full 12 HP restoration occurs strictly on new Stage entry or Checkpoint Revive.
+     - Death in Level 2 revives player at Stage 2 Level 1 at full 12 HP with weapons active.
+- **Status:** **Configurable Baseline / Subject to Lead Review during playtesting.**

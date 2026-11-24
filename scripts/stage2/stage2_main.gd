@@ -1,20 +1,24 @@
 extends Node2D
-## Stage 2 Main Coordinator for LAST SIGNAL (Stage 2 Level 1: Side-Scrolling & First Hostile Contact).
-## Implements horizontal side-scrolling starfield, Guard Bot enemy wave management,
-## 15-second survival objective, full HP restoration upon new stage entry,
-## Stage 2 checkpoint revive, and Call Down / Signal Up architecture.
+## Stage 2 Main Coordinator for LAST SIGNAL (Stage 2 Level 1: Side-Scrolling & First Hostile Contact,
+## and Stage 2 Level 2: Guard Satellite & Accurate Laser Combat).
+## Implements horizontal side-scrolling starfield, Guard Bot & Guard Satellite wave management,
+## survival objectives (15s L1, 20s L2), HP persistence across levels, Stage 2 checkpoint revive,
+## and Call Down / Signal Up architecture.
 
 signal level_completed(level: int)
 signal enemy_spawned(enemy: Area2D)
 
 const GUARD_BOT_SCENE = preload("res://scenes/enemies/guard_bot.tscn")
+const GUARD_SATELLITE_SCENE = preload("res://scenes/enemies/guard_satellite.tscn")
 const PROJECTILE_SCENE = preload("res://scenes/projectile.tscn")
 
 @export var stage_number: int = 2
 @export var current_level: int = 1
-@export var level_duration: float = 15.0 # Confirmed 15s survival objective
-@export var enemy_spawn_interval_min: float = 2.0 # PROVISIONAL (TBD): 2.0-3.5s
-@export var enemy_spawn_interval_max: float = 3.2
+@export var level_duration: float = 15.0 # 15s for Level 1, 20s for Level 2
+@export var enemy_spawn_interval_min: float = 2.0 # Bot spawn min (provisional)
+@export var enemy_spawn_interval_max: float = 3.2 # Bot spawn max
+@export var satellite_spawn_interval_min: float = 3.0 # Satellite spawn min (provisional)
+@export var satellite_spawn_interval_max: float = 4.0 # Satellite spawn max
 @export var scroll_speed: float = 140.0 # Horizontal side-scrolling starfield speed (px/s)
 @export var stage_checkpoint_level: int = 1
 
@@ -118,11 +122,15 @@ func _process(delta: float) -> void:
 
 	time_remaining = maxf(0.0, time_remaining - delta)
 
-	# Enemy spawner
+	# Level-specific enemy spawner
 	spawn_remaining -= delta
 	if spawn_remaining <= 0.0:
-		_spawn_guard_bot()
-		spawn_remaining = randf_range(enemy_spawn_interval_min, enemy_spawn_interval_max)
+		if current_level == 1:
+			_spawn_guard_bot()
+			spawn_remaining = randf_range(enemy_spawn_interval_min, enemy_spawn_interval_max)
+		elif current_level == 2:
+			_spawn_guard_satellite()
+			spawn_remaining = randf_range(satellite_spawn_interval_min, satellite_spawn_interval_max)
 
 	if time_remaining <= 0.0:
 		_complete_level()
@@ -156,9 +164,26 @@ func _spawn_guard_bot() -> Area2D:
 	return bot
 
 
+func _spawn_guard_satellite() -> Area2D:
+	if not GUARD_SATELLITE_SCENE:
+		return null
+
+	var sat = GUARD_SATELLITE_SCENE.instantiate()
+	sat.position = Vector2(1320.0, randf_range(90.0, 630.0))
+	sat.set_target_player(player)
+
+	var target_parent: Node = enemies_container if is_instance_valid(enemies_container) else self
+	target_parent.add_child(sat)
+
+	enemy_spawned.emit(sat)
+	return sat
+
+
 func _clear_spawned_entities() -> void:
 	if is_instance_valid(enemies_container):
 		for child in enemies_container.get_children():
+			if child.has_method("stop_attack"):
+				child.stop_attack()
 			child.queue_free()
 	if is_instance_valid(enemy_projectiles_container):
 		for child in enemy_projectiles_container.get_children():
@@ -170,6 +195,8 @@ func _clear_spawned_entities() -> void:
 	# Also clear any lingering root-level spawned entities
 	for child in get_children():
 		if child.is_in_group("enemies") or child.is_in_group("enemy_projectiles") or child.is_in_group("projectiles"):
+			if child.has_method("stop_attack"):
+				child.stop_attack()
 			child.queue_free()
 
 	if is_instance_valid(weapon_controller) and weapon_controller.has_method("clear_projectiles"):
@@ -180,8 +207,18 @@ func start_level(target_level: int, starting_hp: int = 12) -> void:
 	current_level = target_level
 	finished = false
 	game_won = false
+
+	if current_level == 1:
+		level_duration = 15.0 # Confirmed 15s survival objective for Level 1
+		spawn_remaining = 0.9
+	elif current_level == 2:
+		level_duration = 20.0 # Confirmed 20s survival objective for Level 2
+		spawn_remaining = 1.2
+	else:
+		level_duration = 20.0
+		spawn_remaining = 1.0
+
 	time_remaining = level_duration
-	spawn_remaining = 0.9
 
 	_clear_spawned_entities()
 
@@ -202,8 +239,17 @@ func start_level(target_level: int, starting_hp: int = 12) -> void:
 	_update_debug_overlay()
 
 
+func advance_to_next_level() -> void:
+	if not (finished and game_won and current_level == 1):
+		return
+
+	# Preserve remaining player HP when progressing within Stage 2!
+	var preserved_hp: int = player.health if is_instance_valid(player) else 12
+	start_level(2, preserved_hp)
+
+
 func revive_at_stage_checkpoint() -> void:
-	# Stage 2 Checkpoint: Death in Stage 2 Level 1 revives at Stage 2 Level 1 with 12 HP
+	# Stage 2 Checkpoint: Death in Stage 2 (Level 1 or Level 2) revives strictly at Stage 2 Level 1 with 12 HP
 	if not is_instance_valid(weapon_controller):
 		weapon_controller = get_node_or_null("WeaponController")
 	if is_instance_valid(weapon_controller):
@@ -219,6 +265,9 @@ func _on_player_died() -> void:
 		player.set_physics_process(false)
 	if is_instance_valid(weapon_controller):
 		weapon_controller.set_firing_enabled(false)
+
+	_clear_spawned_entities()
+
 	if is_instance_valid(message):
 		message.visible = true
 		message.text = "SHIP DESTROYED (STAGE %d / LEVEL %d)\nPress [R] to Revive at Stage 2 Checkpoint" % [stage_number, current_level]
@@ -237,9 +286,14 @@ func _complete_level() -> void:
 
 	if is_instance_valid(message):
 		message.visible = true
-		message.text = "STAGE 2 / LEVEL 1 COMPLETE!\nSector Incursion Survived (HP: %02d/%02d)\nHostile Contact: Guard Bot Sector Cleared\n\n[STAGE 2 LEVEL 1 COMPLETE — PROTOTYPE FINISHED]\nPress [R] to replay Stage 2 from Checkpoint" % [
-			player.health, player.max_health
-		]
+		if current_level == 1:
+			message.text = "STAGE 2 / LEVEL 1 COMPLETE!\nSector Incursion Survived (HP: %02d/%02d)\nHostile Contact: Guard Bot Sector Cleared\n\nPress [Space/Enter] for Level 2\nPress [R] to replay Stage 2 from Checkpoint" % [
+				player.health, player.max_health
+			]
+		elif current_level == 2:
+			message.text = "STAGE 2 / LEVEL 2 COMPLETE!\nDeep Sector Survived (HP: %02d/%02d)\nGuard Satellite Defense Grid Cleared\n\n[STAGE 2 LEVEL 2 COMPLETE — PROTOTYPE FINISHED]\nPress [R] to replay Stage 2 from Checkpoint" % [
+				player.health, player.max_health
+			]
 
 	level_completed.emit(current_level)
 	_update_debug_overlay()
@@ -285,6 +339,8 @@ func _unhandled_key_input(event: InputEvent) -> void:
 				_update_debug_overlay()
 		elif event.keycode == KEY_R or event.physical_keycode == KEY_R:
 			revive_at_stage_checkpoint()
+		elif event.keycode == KEY_SPACE or event.keycode == KEY_ENTER:
+			if finished and game_won and current_level == 1:
+				advance_to_next_level()
 		elif event.keycode == KEY_ESCAPE:
 			get_tree().quit()
-

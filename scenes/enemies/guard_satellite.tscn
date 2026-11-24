@@ -1,0 +1,51 @@
+[gd_scene load_steps=8 format=3]
+
+[ext_resource type="Script" path="res://scripts/enemies/guard_satellite.gd" id="1_sat"]
+[ext_resource type="Texture2D" path="res://assets/sprites/enemies/guard_satellite/guard_satellite_idle.png" id="2_idle"]
+[ext_resource type="Texture2D" path="res://assets/sprites/enemies/guard_satellite/guard_satellite_attacking.png" id="3_atk"]
+[ext_resource type="Script" path="res://scripts/enemies/guard_satellite_visual.gd" id="4_visual"]
+[ext_resource type="Script" path="res://scripts/enemies/guard_satellite_laser_visual.gd" id="5_laser"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_sat"]
+radius = 26.0
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_laser"]
+size = Vector2(1400, 12)
+
+[node name="GuardSatellite" type="Area2D"]
+collision_layer = 18
+collision_mask = 5
+script = ExtResource("1_sat")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("CircleShape2D_sat")
+
+[node name="Visuals" type="Node2D" parent="."]
+
+[node name="ProceduralFallback" type="Node2D" parent="Visuals"]
+script = ExtResource("4_visual")
+
+[node name="OfficialArt" type="Node2D" parent="Visuals"]
+
+[node name="IdleSprite" type="Sprite2D" parent="Visuals/OfficialArt"]
+rotation = -1.5708
+scale = Vector2(0.35, 0.35)
+texture = ExtResource("2_idle")
+centered = true
+
+[node name="AttackingSprite" type="Sprite2D" parent="Visuals/OfficialArt"]
+visible = false
+rotation = -1.5708
+scale = Vector2(0.35, 0.35)
+texture = ExtResource("3_atk")
+centered = true
+
+[node name="Laser" type="Area2D" parent="."]
+collision_layer = 32
+collision_mask = 1
+script = ExtResource("5_laser")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Laser"]
+position = Vector2(700, 0)
+shape = SubResource("RectangleShape2D_laser")
+

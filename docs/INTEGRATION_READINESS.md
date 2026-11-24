@@ -157,3 +157,22 @@ Milestone 6 integrated the first hostile security automaton artwork from Batch 0
    - Official art slot prepared under `Visuals/OfficialArt/Sprite2D`.
 3. **Automated Verification Baseline:**
    - 963 total automated assertions across 9 test suites (Milestones 1, 2, 3, 3.5, 3.6, 3.7, 4, 5, 6) passing with 0 failures.
+
+
+---
+
+## 9. Milestone 7: Stage 2 Level 2 Art Integration Results
+
+Milestone 7 integrated the official Guard Satellite artwork from Batch 02 into active gameplay:
+
+1. **Guard Satellite Official Artwork Integration (`scenes/enemies/guard_satellite.tscn`):**
+   - **Delivered Sprites:** `assets/sprites/enemies/guard_satellite/guard_satellite_idle.png` ($347 \times 267\text{ px}$) and `guard_satellite_attacking.png` ($347 \times 267\text{ px}$).
+   - **Visual Subtree Isolation:** Integrated into `scenes/enemies/guard_satellite.tscn` under `Visuals/OfficialArt/IdleSprite` and `Visuals/OfficialArt/AttackingSprite`.
+   - **Scale & Orientation:** Scaled to $0.35 \times 0.35$ ($\approx 121 \times 93\text{ px}$) and rotated $-90^\circ$ to face leftward. Root node maintains `scale = Vector2.ONE`.
+   - **Dynamic State Switching:** `IdleSprite` displays during normal drift and cooldown; `AttackingSprite` dynamically triggers during the laser firing phase.
+   - **Procedural Fallback:** `Visuals/ProceduralFallback` (`scripts/enemies/guard_satellite_visual.gd`) features an armored chassis with dual solar array wings and a glowing optical emitter.
+2. **Procedural Laser VFX Architecture (`scripts/enemies/guard_satellite_laser_visual.gd`):**
+   - Renders a warning telegraph aiming line during preparation ($0.5\text{s}$) and a multi-layered glowing energy beam during firing ($0.15\text{s}$).
+   - Documented as interim procedural visual layer until dedicated beam VFX textures/shaders are delivered.
+3. **Automated Verification Baseline:**
+   - 1,116 total automated assertions across 10 test suites (Milestones 1 through 7) passing with 0 failures.

@@ -396,3 +396,49 @@ The following mechanics are **NOT part of the approved Stage 1 design** and must
 
 
 
+
+
+---
+
+## 15. Milestone 7: Stage 2 Level 2 — Guard Satellite & Accurate Laser Combat
+
+- **Core Gameplay Continuation:**
+  - Stage 2 Level 2 continues the horizontal side-scrolling format introduced in Level 1.
+  - Background starfield continues moving right-to-left at $140.0\text{ px/s}$ (`scroll_speed`).
+  - Viewport remains $1280 \times 720\text{ px}$.
+- **Survival Objective:**
+  - Level duration is strictly 20.0 seconds (`level_duration = 20.0`).
+  - Surviving 20.0 seconds completes Stage 2 Level 2 (`game_won = true`, `finished = true`).
+  - Defeating a mandatory count of satellites is NOT required to win; survival alone achieves victory.
+- **Level 1 to Level 2 Progression & State Persistence:**
+  - When Stage 2 Level 1 finishes (15s survived), a completion banner prompts `Press [Space/Enter] for Level 2`.
+  - Pressing Space/Enter calls `advance_to_next_level()`.
+  - **HP Persistence:** The player ship's remaining HP at the end of Level 1 is strictly preserved into Level 2 (no full HP restoration occurs between levels within Stage 2).
+  - **Equipment Retention:** Primary weapon and shield acquisitions persist (`is_primary_weapon_acquired() == true`, `is_shield_acquired() == true`). Weapon firing remains active ($6\text{ volleys/s}$, $12\text{ shots/s}$, $1\text{ dmg/hit}$).
+  - **Entity Cleanup:** Remaining Guard Bots, projectiles, and contact cooldowns from Level 1 are cleared.
+  - **Level Setup:** `current_level = 2`, survival timer initialized to 20.0s, and HUD displays `STAGE 2 / LEVEL 2`.
+- **Guard Satellite Security Automaton (`scenes/enemies/guard_satellite.tscn` / `scripts/enemies/guard_satellite.gd`):**
+  - **HP & Multi-Hit Combat:** $20\text{ HP}$ (`max_health = 20`). Takes 1 damage per player projectile hit. Emits `damaged(amount, remaining_health)` and dies at $0\text{ HP}$ emitting `destroyed`.
+  - **Movement:** Drifts horizontally leftward across the screen at $90.0\text{ px/s}$ (`speed`). Spawns from off-screen right ($X = 1320.0\text{ px}$, $Y \in [90.0, 630.0]\text{ px}$).
+  - **Collision Layers:** Collision layer 18 (Layer 2 `[2]` Combat Target | Layer 5 `[16]` Enemies), collision mask 5 (Layer 1 `[1]` Player | Layer 3 `[4]` Player Projectiles).
+  - **Official Artwork:** Integrated official `assets/sprites/enemies/guard_satellite/guard_satellite_idle.png` ($347 \times 267\text{ px}$) and `guard_satellite_attacking.png` ($347 \times 267\text{ px}$) scaled $0.35\times$, rotated $-90^\circ$ to face leftward.
+  - **Procedural Fallback:** Geometric armored chassis with dual solar arrays and forward laser optical emitter in `Visuals/ProceduralFallback`.
+  - **Mutual Contact Damage:** Inflicts $1\text{ HP}$ damage to player on contact and takes $1\text{ HP}$ damage in return, governed by independent $0.5\text{s}$ contact pair cooldowns.
+  - **Offscreen Despawn:** Safe deletion when drifting past $X < -120.0\text{ px}$.
+- **Accurate Laser System (`scripts/enemies/guard_satellite_laser_visual.gd`):**
+  - **Attack Lifecycle:**
+    1. `TELEGRAPH` ($0.5\text{s}$ warning): Satellite aims toward player's current coordinates, locks firing orientation (`locked_aim_direction`), and displays an amber/red warning telegraph line. The laser does NOT track player movement after direction is locked. Laser `monitoring = false` (deals 0 damage during telegraph).
+    2. `FIRING` ($0.15\text{s}$ beam): Fires a high-energy laser beam along the locked direction. Displays official `attacking.png` sprite pose. Laser `monitoring = true`.
+    3. `COOLDOWN` ($2.2\text{s} - 3.2\text{s}$): Returns to idle sprite pose and recharges.
+  - **Hit Detection & Damage:** Area2D beam extending 1400 px along locked vector (Collision Layer 32, Mask 1). Inflicts exactly $1\text{ HP}$ damage to the player if inside the beam during firing.
+  - **Single Damage Guarantee:** `has_dealt_damage` boolean flag ensures damage occurs at most once per laser attack event, eliminating per-frame damage loops.
+  - **Dodge Mechanics:** Player can avoid damage by observing the telegraph warning line and moving out of the beam path before the laser fires.
+  - **Friendly Fire & Self-Damage Immunity:** Mask 1 ensures laser only detects the player; firing satellite and friendly Guard Bots/Satellites are completely immune.
+  - **Destruction Safety:** Destroying the satellite immediately terminates the laser attack (`stop_attack()`), disables collision, and frees the node.
+- **Stage 2 Checkpoint & Revival Semantics:**
+  - Death in Stage 2 Level 2 triggers `_on_player_died()` displaying `SHIP DESTROYED (STAGE 2 / LEVEL 2)`.
+  - Pressing [R] calls `revive_at_stage_checkpoint()`, reviving the player strictly at **Stage 2 Level 1** at full $12\text{ HP}$ with active weapons.
+  - Reviving in Stage 2 does **NOT** reset the player to Stage 1.
+- **Milestone Scope Boundary:**
+  - Surviving 20 seconds in Level 2 displays `STAGE 2 / LEVEL 2 COMPLETE!`.
+  - Stage 2 Level 3 cannot start; no premature Level 3 transitions or scenes are implemented.

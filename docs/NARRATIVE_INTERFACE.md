@@ -165,3 +165,20 @@ With Milestone 6 introducing hostile security automata, the following semantic e
 
 > [!NOTE]
 > Like Stage 1 events, all Stage 2 narrative content remains non-canonical stubs until authored and approved by project writing leads.
+
+
+---
+
+## 7. Stage 2 Level 2 Semantic Dialogue Event Hooks (Milestone 7)
+
+With Milestone 7 introducing Guard Satellites and accurate laser combat, the following semantic event IDs are available for future dialogue and narrative sequencing:
+
+| Event ID | Trigger Timing | Associated Payload / Context |
+| :--- | :--- | :--- |
+| `stage2_l2_started` | Stage 2 Level 2 entry / progression from Level 1 | Deep perimeter sector coordinates, 20s survival objective |
+| `stage2_l2_guard_satellite_encountered` | First Guard Satellite spawn or radar ping | Optical tracking warning, laser grid active alert |
+| `stage2_l2_laser_fired` | Guard Satellite laser discharge | High-energy optical beam firing event |
+| `stage2_l2_completed` | Surviving 20s satellite defense grid | Satellite perimeter bypassed, stage progression waypoint |
+
+> [!NOTE]
+> All Stage 2 Level 2 narrative triggers remain non-canonical stubs pending official creative writing deliverables.
