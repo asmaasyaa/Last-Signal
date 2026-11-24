@@ -223,3 +223,32 @@ This document tracks unresolved balance parameters, provisional features, and pe
      - Full 12 HP restoration occurs strictly on new Stage entry or Checkpoint Revive.
      - Death in Level 2 revives player at Stage 2 Level 1 at full 12 HP with weapons active.
 - **Status:** **Configurable Baseline / Subject to Lead Review during playtesting.**
+
+---
+
+## 14. Milestone 8 Stage 2 Level 3 Configurable Parameters & EM Jammer TBDs
+
+- **Mechanic Overview:** Stage 2 Level 3 introduces the Guard Drone kamikaze enemy automaton, an untimed 5-kill elimination objective, strict kill credit attribution, Level 2 -> Level 3 progression with HP persistence, and EM Jammer equipment acquisition upon sector completion.
+- **Configurable Parameters in Code (`scripts/stage2/stage2_main.gd`, `scripts/enemies/guard_drone.gd`):**
+  1. **Objective & Spawner Tuning:**
+     - `target_kills = 5` (exact drone kills required to complete level).
+     - `level_duration = 0.0` / untimed (no survival timer / countdown for Level 3).
+     - `@export var drone_spawn_interval_min: float = 2.2` seconds.
+     - `@export var drone_spawn_interval_max: float = 3.5` seconds.
+     - Continuous drone spawning until 5 player kills are registered.
+  2. **Guard Drone Automaton Parameters:**
+     - `@export var max_health: int = 20` (requires 20 player projectile hits).
+     - `@export var approach_speed: float = 120.0` px/s (leftward horizontal scan speed).
+     - `@export var charge_speed: float = 360.0` px/s (high-speed dash velocity along locked vector).
+     - `@export var telegraph_duration: float = 0.45` seconds (aiming lock duration before dash).
+     - `@export var contact_damage: int = 1` HP (inflicts 1 damage to player on kamikaze impact).
+     - `@export var official_art_enabled: bool = true` (uses official `guard_drone_idle.png` and `guard_drone_attacking.png`).
+  3. **Strict Kill Credit Attribution Rules:**
+     - `PLAYER_WEAPON` ($0$): Only player projectile kills increment `drones_destroyed`.
+     - `KAMIKAZE_IMPACT` ($1$): Self-destructing on player contact awards 0 kill credit.
+     - `OFFSCREEN_DESPAWN` ($2$): Flying offscreen left ($X < -120$) awards 0 kill credit.
+     - `LEVEL_CLEANUP` ($3$): Scene transitions/death resets award 0 kill credit.
+  4. **EM Jammer Equipment TBDs (Deferred to Milestone 9 / Stage 2 Level 4+):**
+     - Target mechanics: 120° forward sector arc, 10-second enemy movement/firing stun, 30-second cooldown timer.
+     - Status in Milestone 8: Equipment acquisition event emitted (`is_em_jammer_acquired() == true`), but active player control/activation is deferred.
+- **Status:** **Configurable Baseline / Subject to Lead Review during playtesting.**

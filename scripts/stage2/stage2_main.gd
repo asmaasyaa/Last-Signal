@@ -1,24 +1,29 @@
 extends Node2D
 ## Stage 2 Main Coordinator for LAST SIGNAL (Stage 2 Level 1: Side-Scrolling & First Hostile Contact,
-## and Stage 2 Level 2: Guard Satellite & Accurate Laser Combat).
-## Implements horizontal side-scrolling starfield, Guard Bot & Guard Satellite wave management,
-## survival objectives (15s L1, 20s L2), HP persistence across levels, Stage 2 checkpoint revive,
-## and Call Down / Signal Up architecture.
+## Stage 2 Level 2: Guard Satellite & Accurate Laser Combat, and Stage 2 Level 3: Kamikaze Guard Drone & EM Jammer Acquisition).
+## Implements horizontal side-scrolling starfield, Guard Bot, Guard Satellite & Guard Drone wave management,
+## survival objectives (15s L1, 20s L2), elimination objective (5 drone kills L3), HP persistence across levels,
+## Stage 2 checkpoint revive, EM Jammer acquisition event, and Call Down / Signal Up architecture.
 
 signal level_completed(level: int)
 signal enemy_spawned(enemy: Area2D)
+signal drone_kill_registered(current: int, target: int)
+signal em_jammer_acquired_event(payload: Dictionary)
 
 const GUARD_BOT_SCENE = preload("res://scenes/enemies/guard_bot.tscn")
 const GUARD_SATELLITE_SCENE = preload("res://scenes/enemies/guard_satellite.tscn")
+const GUARD_DRONE_SCENE = preload("res://scenes/enemies/guard_drone.tscn")
 const PROJECTILE_SCENE = preload("res://scenes/projectile.tscn")
 
 @export var stage_number: int = 2
 @export var current_level: int = 1
-@export var level_duration: float = 15.0 # 15s for Level 1, 20s for Level 2
+@export var level_duration: float = 15.0 # 15s for Level 1, 20s for Level 2, 0.0s (untimed) for Level 3
 @export var enemy_spawn_interval_min: float = 2.0 # Bot spawn min (provisional)
 @export var enemy_spawn_interval_max: float = 3.2 # Bot spawn max
 @export var satellite_spawn_interval_min: float = 3.0 # Satellite spawn min (provisional)
 @export var satellite_spawn_interval_max: float = 4.0 # Satellite spawn max
+@export var drone_spawn_interval_min: float = 2.2 # Drone spawn min (provisional)
+@export var drone_spawn_interval_max: float = 3.5 # Drone spawn max
 @export var scroll_speed: float = 140.0 # Horizontal side-scrolling starfield speed (px/s)
 @export var stage_checkpoint_level: int = 1
 
@@ -30,8 +35,12 @@ var star_offset: float = 0.0
 var stars: Array[Vector2] = []
 var stage_acquisitions: Dictionary = {
 	"primary_weapon_acquired": true,
-	"shield_acquired": true
+	"shield_acquired": true,
+	"em_jammer_acquired": false
 }
+var drones_destroyed: int = 0
+var target_kills: int = 5
+var em_jammer_acquired: bool = false
 var show_debug_overlay: bool = false
 
 @onready var player: Area2D = get_node_or_null("Player")
@@ -82,6 +91,8 @@ func initialize_from_stage1(p_stage1_data: Dictionary) -> void:
 	stage_acquisitions = p_stage1_data.duplicate()
 	stage_acquisitions["primary_weapon_acquired"] = true
 	stage_acquisitions["shield_acquired"] = true
+	stage_acquisitions["em_jammer_acquired"] = false
+	em_jammer_acquired = false
 	start_level(1, 12)
 
 
@@ -95,6 +106,18 @@ func is_primary_weapon_acquired() -> bool:
 
 func is_shield_acquired() -> bool:
 	return stage_acquisitions.get("shield_acquired", true)
+
+
+func is_em_jammer_acquired() -> bool:
+	return stage_acquisitions.get("em_jammer_acquired", false)
+
+
+func get_drones_destroyed() -> int:
+	return drones_destroyed
+
+
+func get_target_kills() -> int:
+	return target_kills
 
 
 func _setup_debug_overlay() -> void:
@@ -120,20 +143,28 @@ func _process(delta: float) -> void:
 		_update_debug_overlay()
 		return
 
-	time_remaining = maxf(0.0, time_remaining - delta)
+	# Level-specific objective handling
+	if current_level == 1 or current_level == 2:
+		time_remaining = maxf(0.0, time_remaining - delta)
 
-	# Level-specific enemy spawner
-	spawn_remaining -= delta
-	if spawn_remaining <= 0.0:
-		if current_level == 1:
-			_spawn_guard_bot()
-			spawn_remaining = randf_range(enemy_spawn_interval_min, enemy_spawn_interval_max)
-		elif current_level == 2:
-			_spawn_guard_satellite()
-			spawn_remaining = randf_range(satellite_spawn_interval_min, satellite_spawn_interval_max)
+		# Level-specific enemy spawner
+		spawn_remaining -= delta
+		if spawn_remaining <= 0.0:
+			if current_level == 1:
+				_spawn_guard_bot()
+				spawn_remaining = randf_range(enemy_spawn_interval_min, enemy_spawn_interval_max)
+			elif current_level == 2:
+				_spawn_guard_satellite()
+				spawn_remaining = randf_range(satellite_spawn_interval_min, satellite_spawn_interval_max)
 
-	if time_remaining <= 0.0:
-		_complete_level()
+		if time_remaining <= 0.0:
+			_complete_level()
+	elif current_level == 3:
+		# Elimination objective: untimed, continuous drone spawning until target reached
+		spawn_remaining -= delta
+		if spawn_remaining <= 0.0:
+			_spawn_guard_drone()
+			spawn_remaining = randf_range(drone_spawn_interval_min, drone_spawn_interval_max)
 
 	_update_hud()
 	_update_debug_overlay()
@@ -179,6 +210,39 @@ func _spawn_guard_satellite() -> Area2D:
 	return sat
 
 
+func _spawn_guard_drone() -> Area2D:
+	if not GUARD_DRONE_SCENE:
+		return null
+
+	var drone = GUARD_DRONE_SCENE.instantiate()
+	drone.position = Vector2(1320.0, randf_range(80.0, 640.0))
+	drone.set_target_player(player)
+	drone.drone_defeated.connect(_on_drone_defeated)
+
+	var target_parent: Node = enemies_container if is_instance_valid(enemies_container) else self
+	target_parent.add_child(drone)
+
+	enemy_spawned.emit(drone)
+	return drone
+
+
+func _on_drone_defeated(reason: int, _drone: Area2D) -> void:
+	if finished or current_level != 3:
+		return
+
+	# Strict kill credit attribution:
+	# Only player weapon damage (reason 0 == PLAYER_WEAPON) awards kill credit!
+	# Kamikaze self-destruct (1), offscreen despawn (2), and level cleanup (3) do NOT award credit.
+	if reason == 0:
+		drones_destroyed = mini(drones_destroyed + 1, target_kills)
+		drone_kill_registered.emit(drones_destroyed, target_kills)
+		_update_hud()
+		_update_debug_overlay()
+
+		if drones_destroyed >= target_kills:
+			_complete_level()
+
+
 func _clear_spawned_entities() -> void:
 	if is_instance_valid(enemies_container):
 		for child in enemies_container.get_children():
@@ -211,14 +275,24 @@ func start_level(target_level: int, starting_hp: int = 12) -> void:
 	if current_level == 1:
 		level_duration = 15.0 # Confirmed 15s survival objective for Level 1
 		spawn_remaining = 0.9
+		time_remaining = level_duration
 	elif current_level == 2:
 		level_duration = 20.0 # Confirmed 20s survival objective for Level 2
 		spawn_remaining = 1.2
+		time_remaining = level_duration
+	elif current_level == 3:
+		level_duration = 0.0 # Untimed elimination objective (5 drone kills)
+		time_remaining = 0.0
+		drones_destroyed = 0
+		target_kills = 5
+		spawn_remaining = 1.0
+		# EM Jammer is unearned at Level 3 start
+		stage_acquisitions["em_jammer_acquired"] = false
+		em_jammer_acquired = false
 	else:
 		level_duration = 20.0
 		spawn_remaining = 1.0
-
-	time_remaining = level_duration
+		time_remaining = level_duration
 
 	_clear_spawned_entities()
 
@@ -240,20 +314,28 @@ func start_level(target_level: int, starting_hp: int = 12) -> void:
 
 
 func advance_to_next_level() -> void:
-	if not (finished and game_won and current_level == 1):
+	if not (finished and game_won):
 		return
 
 	# Preserve remaining player HP when progressing within Stage 2!
 	var preserved_hp: int = player.health if is_instance_valid(player) else 12
-	start_level(2, preserved_hp)
+
+	if current_level == 1:
+		start_level(2, preserved_hp)
+	elif current_level == 2:
+		start_level(3, preserved_hp)
 
 
 func revive_at_stage_checkpoint() -> void:
-	# Stage 2 Checkpoint: Death in Stage 2 (Level 1 or Level 2) revives strictly at Stage 2 Level 1 with 12 HP
+	# Stage 2 Checkpoint: Death in Stage 2 (Level 1, Level 2, or Level 3) revives strictly at Stage 2 Level 1 with 12 HP
 	if not is_instance_valid(weapon_controller):
 		weapon_controller = get_node_or_null("WeaponController")
 	if is_instance_valid(weapon_controller):
 		weapon_controller.clear_projectiles()
+
+	stage_acquisitions["em_jammer_acquired"] = false
+	em_jammer_acquired = false
+	drones_destroyed = 0
 
 	start_level(stage_checkpoint_level, 12)
 
@@ -284,6 +366,15 @@ func _complete_level() -> void:
 
 	_clear_spawned_entities()
 
+	if current_level == 3:
+		stage_acquisitions["em_jammer_acquired"] = true
+		em_jammer_acquired = true
+		em_jammer_acquired_event.emit({
+			"equipment": "em_jammer",
+			"level": 3,
+			"status": "acquired"
+		})
+
 	if is_instance_valid(message):
 		message.visible = true
 		if current_level == 1:
@@ -291,8 +382,12 @@ func _complete_level() -> void:
 				player.health, player.max_health
 			]
 		elif current_level == 2:
-			message.text = "STAGE 2 / LEVEL 2 COMPLETE!\nDeep Sector Survived (HP: %02d/%02d)\nGuard Satellite Defense Grid Cleared\n\n[STAGE 2 LEVEL 2 COMPLETE — PROTOTYPE FINISHED]\nPress [R] to replay Stage 2 from Checkpoint" % [
+			message.text = "STAGE 2 / LEVEL 2 COMPLETE!\nDeep Sector Survived (HP: %02d/%02d)\nGuard Satellite Defense Grid Cleared\n\nPress [Space/Enter] for Level 3\nPress [R] to replay Stage 2 from Checkpoint" % [
 				player.health, player.max_health
+			]
+		elif current_level == 3:
+			message.text = "STAGE 2 / LEVEL 3 COMPLETE!\nGuard Drone Interceptors Neutralized (%d/%d)\n[EQUIPMENT RECOVERED: EM Jammer]\n\n[STAGE 2 LEVEL 3 COMPLETE — PROTOTYPE FINISHED]\nPress [R] to replay Stage 2 from Checkpoint" % [
+				drones_destroyed, target_kills
 			]
 
 	level_completed.emit(current_level)
@@ -307,9 +402,15 @@ func _on_health_changed(_current: int, _maximum: int) -> void:
 func _update_hud() -> void:
 	if not is_instance_valid(player) or not is_instance_valid(info):
 		return
-	info.text = "STAGE %d / LEVEL %d     HP %02d / %02d     TIME %02d s" % [
-		stage_number, current_level, player.health, player.max_health, ceili(time_remaining)
-	]
+
+	if current_level == 3:
+		info.text = "STAGE %d / LEVEL %d     HP %02d / %02d     DRONES DESTROYED: %d / %d" % [
+			stage_number, current_level, player.health, player.max_health, drones_destroyed, target_kills
+		]
+	else:
+		info.text = "STAGE %d / LEVEL %d     HP %02d / %02d     TIME %02d s" % [
+			stage_number, current_level, player.health, player.max_health, ceili(time_remaining)
+		]
 
 
 func _update_debug_overlay() -> void:
@@ -322,8 +423,16 @@ func _update_debug_overlay() -> void:
 	var state_str: String = player.get_regen_state_string() if player.has_method("get_regen_state_string") else ""
 	var enemy_count: int = enemies_container.get_child_count() if is_instance_valid(enemies_container) else 0
 
-	debug_label.text = "[DEBUG OVERLAY — F3 to toggle]\nStage: %d | Level: %d | Level Duration: %.1fs\nMode: Side-Scrolling (Horizontal Drift: %.1f px/s)\nHP: %02d / %02d\nSpeed: %5.1f px/s | Regen: %s\nActive Enemies: %d | Primary Weapon: ACTIVE" % [
-		stage_number, current_level, level_duration, scroll_speed,
+	var obj_info: String = ""
+	if current_level == 3:
+		obj_info = "Elimination: %d / %d Drones | EM Jammer: %s" % [
+			drones_destroyed, target_kills, "ACQUIRED" if is_em_jammer_acquired() else "UNEARNED"
+		]
+	else:
+		obj_info = "Level Duration: %.1fs | Time: %.1fs" % [level_duration, time_remaining]
+
+	debug_label.text = "[DEBUG OVERLAY — F3 to toggle]\nStage: %d | Level: %d | %s\nMode: Side-Scrolling (Horizontal Drift: %.1f px/s)\nHP: %02d / %02d\nSpeed: %5.1f px/s | Regen: %s\nActive Enemies: %d | Primary Weapon: ACTIVE" % [
+		stage_number, current_level, obj_info, scroll_speed,
 		player.health, player.max_health,
 		speed, state_str,
 		enemy_count
@@ -340,7 +449,7 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		elif event.keycode == KEY_R or event.physical_keycode == KEY_R:
 			revive_at_stage_checkpoint()
 		elif event.keycode == KEY_SPACE or event.keycode == KEY_ENTER:
-			if finished and game_won and current_level == 1:
+			if finished and game_won and (current_level == 1 or current_level == 2):
 				advance_to_next_level()
 		elif event.keycode == KEY_ESCAPE:
 			get_tree().quit()

@@ -176,3 +176,21 @@ Milestone 7 integrated the official Guard Satellite artwork from Batch 02 into a
    - Documented as interim procedural visual layer until dedicated beam VFX textures/shaders are delivered.
 3. **Automated Verification Baseline:**
    - 1,116 total automated assertions across 10 test suites (Milestones 1 through 7) passing with 0 failures.
+
+
+---
+
+## 10. Milestone 8: Stage 2 Level 3 Art Integration Results
+
+Milestone 8 integrated the official Guard Drone artwork from Batch 02 into active gameplay:
+
+1. **Guard Drone Official Artwork Integration (`scenes/enemies/guard_drone.tscn`):**
+   - **Delivered Sprites:** `assets/sprites/enemies/guard_drone/guard_drone_idle.png` ($152 \times 316\text{ px}$) and `guard_drone_attacking.png` ($151 \times 316\text{ px}$).
+   - **Visual Subtree Isolation:** Integrated into `scenes/enemies/guard_drone.tscn` under `Visuals/OfficialArt/IdleSprite` and `Visuals/OfficialArt/AttackingSprite`.
+   - **Scale & Orientation:** Scaled to $0.35 \times 0.35$ ($\approx 53 \times 110\text{ px}$) and rotated $-90^\circ$ to face leftward toward the player in the side-scrolling orientation. Root node maintains `scale = Vector2.ONE`.
+   - **Dynamic State Switching:** `IdleSprite` displays during the approach phase; `AttackingSprite` dynamically triggers during telegraph lock-on and high-speed kamikaze charge.
+   - **Procedural Fallback:** `Visuals/ProceduralFallback` (`scripts/enemies/guard_drone_visual.gd`) features a sleek arrowhead interceptor hull with rear thruster exhaust flare and forward glowing optical sensor / charge corona.
+2. **Attributed Destruction Integration:**
+   - Visual presentation cleanly supports all 4 destruction reasons (`PLAYER_WEAPON`, `KAMIKAZE_IMPACT`, `OFFSCREEN_DESPAWN`, `LEVEL_CLEANUP`) with immediate collision shape deactivation, single-hit damage protection, and node freeing.
+3. **Automated Verification Baseline:**
+   - 1,282 total automated assertions across 11 test suites (Milestones 1 through 8) passing with 0 failures.

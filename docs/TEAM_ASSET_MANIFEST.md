@@ -22,8 +22,8 @@ This manifest catalogs all **44 visual assets** delivered by the art team across
 
 Every asset has been evaluated against the existing codebase, classified into standard statuses, and traced from its source path to its runtime location:
 
-- **INTEGRATED (21 assets):** Actively connected to game entities or user interface scenes with passing automated test coverage. (Includes Player alive/dead, Start/Select/Exit buttons, 15 stage/level buttons, and now **Communication Satellite**).
-- **IMPORTED / RESERVED FOR FUTURE (20 assets):** Staged in clean runtime directories for upcoming milestones; no gameplay or mechanics were invented prematurely. (Includes decorative button backplate, overheat label, Stage 2 mini-boss [3], Stage 3 final boss [11], and **Stage 2 Guards [6]**).
+- **INTEGRATED (23 assets):** Actively connected to game entities or user interface scenes with passing automated test coverage. (Includes Player alive/dead, Start/Select/Exit buttons, 15 stage/level buttons, Communication Satellite, Guard Bot [2], Guard Satellite [2], and now **Guard Drone [2]**).
+- **IMPORTED / RESERVED FOR FUTURE (18 assets):** Staged in clean runtime directories for upcoming milestones; no gameplay or mechanics were invented prematurely. (Includes decorative button backplate, overheat label, Stage 2 mini-boss [3], and Stage 3 final boss [11]).
 - **AWAITING TEAM CONFIRMATION (2 assets):** **Nirawak 1** (`before-extraction.png` and `after-extraction.png`). Visual state relationship preserved; awaiting authoritative confirmation on narrative event and level mapping.
 - **NEEDS REVISION (1 asset):** Stage 2 Level 3 button (`stage2_l3_raw.png` - $1920 \times 1080$ canvas anomaly). Interim non-destructive crop (`stage2_l3_cropped.png`) remains active in UI.
 - **MISSING (Stage 1 Gameplay Assets):** Documented with priority ratings and specifications for upcoming delivery.
@@ -46,8 +46,8 @@ Every asset has been evaluated against the existing codebase, classified into st
 | `assets/entities/guards/bot/attacking.png` | `res://assets/sprites/enemies/guard_bot/guard_bot_attacking.png` | $129 \times 129$ | RGBA | North ($-Y$) | **INTEGRATED / OPERATIONAL** | Guard Bot attack pose. Integrated in `scenes/enemies/guard_bot.tscn`. |
 | `assets/entities/guards/satellite/idle.png` | `res://assets/sprites/enemies/guard_satellite/guard_satellite_idle.png` | $347 \times 267$ | RGBA | North ($-Y$) | **INTEGRATED / OPERATIONAL** | Guard Satellite idle state. Integrated in `scenes/enemies/guard_satellite.tscn`. |
 | `assets/entities/guards/satellite/attacking.png` | `res://assets/sprites/enemies/guard_satellite/guard_satellite_attacking.png` | $347 \times 267$ | RGBA | North ($-Y$) | **INTEGRATED / OPERATIONAL** | Guard Satellite attack pose. Integrated in `scenes/enemies/guard_satellite.tscn`. |
-| `assets/entities/guards/drone/idle.png` | `res://assets/sprites/enemies/guard_drone/guard_drone_idle.png` | $152 \times 316$ | RGBA | North ($-Y$) | **IMPORTED / RESERVED** | Guard Drone idle state. Staged for Stage 2. |
-| `assets/entities/guards/drone/attacking.png` | `res://assets/sprites/enemies/guard_drone/guard_drone_attacking.png` | $151 \times 316$ | RGBA | North ($-Y$) | **IMPORTED / RESERVED** | Guard Drone attack pose. Staged for Stage 2. |
+| `assets/entities/guards/drone/idle.png` | `res://assets/sprites/enemies/guard_drone/guard_drone_idle.png` | $152 \times 316$ | RGBA | North ($-Y$) | **INTEGRATED / OPERATIONAL** | Guard Drone idle state. Integrated in `scenes/enemies/guard_drone.tscn`. |
+| `assets/entities/guards/drone/attacking.png` | `res://assets/sprites/enemies/guard_drone/guard_drone_attacking.png` | $151 \times 316$ | RGBA | North ($-Y$) | **INTEGRATED / OPERATIONAL** | Guard Drone attack pose. Integrated in `scenes/enemies/guard_drone.tscn`. |
 | **Main Menu UI (Batch 01)** | | | | | | |
 | `assets/UI HUI/start btn.png` | `res://assets/ui/buttons/btn_start.png` | $629 \times 131$ | RGBA | N/A | **INTEGRATED** | Connected to `MainMenu/CenterContainer/VBoxContainer/ButtonsContainer/StartButton`. Launches Stage 1 Level 1 (`scenes/main.tscn`). |
 | `assets/UI HUI/select btn.png` | `res://assets/ui/buttons/btn_select.png` | $639 \times 135$ | RGBA | N/A | **INTEGRATED** | Connected to `MainMenu/CenterContainer/VBoxContainer/ButtonsContainer/SelectButton`. Transitions to `scenes/ui/level_select.tscn`. |

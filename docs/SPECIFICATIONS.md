@@ -440,5 +440,65 @@ The following mechanics are **NOT part of the approved Stage 1 design** and must
   - Pressing [R] calls `revive_at_stage_checkpoint()`, reviving the player strictly at **Stage 2 Level 1** at full $12\text{ HP}$ with active weapons.
   - Reviving in Stage 2 does **NOT** reset the player to Stage 1.
 - **Milestone Scope Boundary:**
-  - Surviving 20 seconds in Level 2 displays `STAGE 2 / LEVEL 2 COMPLETE!`.
-  - Stage 2 Level 3 cannot start; no premature Level 3 transitions or scenes are implemented.
+  - Surviving 20 seconds in Level 2 displays `STAGE 2 / LEVEL 2 COMPLETE!` and enables progression to Level 3 via [Space/Enter].
+- **M7 Laser Alignment Audit:**
+  - In `guard_satellite.gd`, the `Laser` node is an integrated child `Area2D` of `GuardSatellite`.
+  - When the satellite drifts horizontally leftward during the telegraph warning phase, the laser moves in lockstep because its local transform is anchored to the satellite body.
+  - The warning telegraph visual line and the physical `CollisionShape2D` beam share the identical local coordinates ($Vector2(0, 0)$ to $Vector2(1400, 0)$), oriented via `locked_aim_direction.angle()`.
+  - Audited and verified: 100% visual and physics alignment is maintained throughout the entire telegraph and firing lifecycle, with zero drift divergence.
+
+
+---
+
+## 16. Milestone 8: Stage 2 Level 3 — Kamikaze Guard Drone & EM Jammer Acquisition
+
+- **Core Gameplay Continuation:**
+  - Stage 2 Level 3 continues the horizontal side-scrolling format introduced in Level 1.
+  - Background starfield continues moving right-to-left at $140.0\text{ px/s}$ (`scroll_speed`).
+  - Viewport remains fixed at $1280 \times 720\text{ px}$.
+- **Untimed 5-Kill Elimination Objective:**
+  - Unlike Levels 1 and 2, Level 3 has **no survival timer** and **no time limit** (`level_duration = 0.0`, `time_remaining = 0.0`).
+  - Victory condition requires destroying exactly **5 Guard Drones** with the player's twin-barrel pulse cannon (`target_kills = 5`, `drones_destroyed >= 5`).
+  - Drones spawn continuously from offscreen right ($X = 1320.0\text{ px}$, $Y \in [80.0, 640.0]\text{ px}$) at randomized intervals (`drone_spawn_interval_min: 2.2s`, `drone_spawn_interval_max: 3.5s`) until 5 legitimate player kills are recorded.
+  - HUD displays: `STAGE 2 / LEVEL 3     HP %02d / %02d     DRONES DESTROYED: %d / %d`.
+- **Level 2 to Level 3 Progression & State Persistence:**
+  - When Stage 2 Level 2 is completed, the victory banner displays: `Press [Space/Enter] for Level 3`.
+  - Pressing Space or Enter calls `advance_to_next_level()`.
+  - **HP Persistence:** Remaining player HP at the end of Level 2 is strictly preserved into Level 3 (no within-stage restoration).
+  - **Equipment Retention:** Primary weapon and deflector shield persist (`is_primary_weapon_acquired() == true`, `is_shield_acquired() == true`).
+  - **Entity Cleanup:** Lingering satellites, lasers, projectiles, and cooldowns from Level 2 are cleared.
+  - **Level Setup:** `current_level = 3`, `drones_destroyed = 0`, `target_kills = 5`.
+- **Guard Drone Security Automaton (`scenes/enemies/guard_drone.tscn` / `scripts/enemies/guard_drone.gd`):**
+  - **HP & Multi-Hit Combat:** $20\text{ HP}$ (`max_health = 20`). Takes 1 damage per player projectile hit. Emits `damaged(amount, remaining_health)` and dies at $0\text{ HP}$ emitting `destroyed` and `drone_defeated(DestructionReason.PLAYER_WEAPON, self)`.
+  - **Collision Layers:** Collision layer 18 (Layer 2 `[2]` Combat Target | Layer 5 `[16]` Enemies), collision mask 5 (Layer 1 `[1]` Player | Layer 3 `[4]` Player Projectiles).
+  - **Official Artwork:** Integrated official `assets/sprites/enemies/guard_drone/guard_drone_idle.png` ($152 \times 316\text{ px}$) and `guard_drone_attacking.png` ($151 \times 316\text{ px}$) scaled $0.35\times$, rotated $-90^\circ$ to face leftward.
+  - **Procedural Fallback:** Sleek arrowhead armored hull with rear thruster exhaust flare and forward glowing optical cluster / charge corona in `Visuals/ProceduralFallback`.
+  - **FSM AI State Machine:**
+    1. `APPROACH` ($120.0\text{ px/s}$): Enters from right edge, drifting leftward for an approach duration (`approach_timer = 1.0 - 2.0s`).
+    2. `TELEGRAPH` ($0.45\text{s}$ warning): Locks charge trajectory toward player's current position (`locked_charge_direction`), activates `guard_drone_attacking.png` sprite pose, and aligns visual rotation. Does NOT track player turning once locked.
+    3. `CHARGING` ($360.0\text{ px/s}$ dash): High-speed linear dash along `locked_charge_direction`.
+    4. `DESTROYED`: Collision and monitoring disabled, queued for deletion.
+  - **Dodge Mechanics:** Because the trajectory locks during telegraph, the player can observe the warning pose/corona and maneuver vertically out of the drone's flight line.
+- **Strict Kill Credit Attribution Rules:**
+  - `DestructionReason.PLAYER_WEAPON` ($0$): Drone destroyed by player weapon damage. Only this increments `drones_destroyed` and counts toward the 5-kill objective.
+  - `DestructionReason.KAMIKAZE_IMPACT` ($1$): Drone collides with player ship. Deals $1\text{ HP}$ contact damage to player and immediately self-destructs. Awards **ZERO** kill credit (`drones_destroyed` does not increment).
+  - `DestructionReason.OFFSCREEN_DESPAWN` ($2$): Drone flies past offscreen left ($X < -120.0\text{ px}$). Self-destructs with **ZERO** kill credit.
+  - `DestructionReason.LEVEL_CLEANUP` ($3$): Drone cleared on level reset or player death. Awards **ZERO** kill credit.
+- **Equipment Acquisition (EM Jammer):**
+  - Unearned at Level 3 start (`is_em_jammer_acquired() == false`, `stage_acquisitions["em_jammer_acquired"] = false`).
+  - Achieved upon registering the 5th legitimate drone kill:
+    - Sets `stage_acquisitions["em_jammer_acquired"] = true`.
+    - Emits `em_jammer_acquired_event({"equipment": "em_jammer", "level": 3, "status": "acquired"})`.
+    - Emits `level_completed(3)`.
+    - Displays victory banner:
+      `STAGE 2 / LEVEL 3 COMPLETE!\nGuard Drone Interceptors Neutralized (5/5)\n[EQUIPMENT RECOVERED: EM Jammer]\n\n[STAGE 2 LEVEL 3 COMPLETE — PROTOTYPE FINISHED]\nPress [R] to replay Stage 2 from Checkpoint`
+  - **Deferred Activation:** EM Jammer weapon behavior (120° forward cone, 10s enemy stun, 30s cooldown) is deferred to Stage 2 Level 4+. Player node has no active input bindings in Level 3.
+- **Stage 2 Checkpoint & Revival Semantics:**
+  - Death in Stage 2 Level 3 triggers `_on_player_died()` displaying `SHIP DESTROYED (STAGE 2 / LEVEL 3)\nPress [R] to Revive at Stage 2 Checkpoint`.
+  - Pressing [R] calls `revive_at_stage_checkpoint()`, reviving player strictly at **Stage 2 Level 1** at full $12\text{ HP}$ with active weapons.
+  - Unearned EM Jammer is cleared on revive (`is_em_jammer_acquired() == false`).
+  - `drones_destroyed` is reset to 0.
+  - Reviving in Stage 2 does **NOT** reset the player to Stage 1.
+- **Milestone Scope Boundary:**
+  - Completing Level 3 finishes the currently authorized prototype.
+  - Stage 2 Level 4 cannot start; no Level 4 gameplay is implemented.

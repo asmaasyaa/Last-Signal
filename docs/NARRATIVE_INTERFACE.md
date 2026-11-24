@@ -182,3 +182,36 @@ With Milestone 7 introducing Guard Satellites and accurate laser combat, the fol
 
 > [!NOTE]
 > All Stage 2 Level 2 narrative triggers remain non-canonical stubs pending official creative writing deliverables.
+
+
+---
+
+## 8. Stage 2 Level 3 Semantic Dialogue Event Hooks (Milestone 8)
+
+With Milestone 8 introducing Guard Drone interceptors, the 5-kill elimination objective, and EM Jammer equipment acquisition, the following semantic event hooks are available for future dialogue systems:
+
+| Event ID | Trigger Timing | Associated Payload / Context |
+| :--- | :--- | :--- |
+| `stage2_l3_started` | Stage 2 Level 3 entry from Level 2 | High-speed interceptor alert, elimination objective established (5 targets) |
+| `stage2_l3_drone_telegraph` | Guard Drone locks charge trajectory | Optical charge lock-on warning, evasive maneuver prompt |
+| `stage2_l3_drone_destroyed` | Player weapon destroys Guard Drone | Kill confirmed (`drones_destroyed / 5`), telemetry feedback |
+| `stage2_l3_kamikaze_impact` | Drone impacts player ship | Collision damage alert, warning: no kill credit for self-destruction |
+| `stage2_l3_em_jammer_acquired` | 5th Guard Drone neutralized | Equipment recovered: EM Jammer subsystem secured |
+| `stage2_l3_completed` | Level 3 elimination objective completed | Sector cleared, prototype finished banner |
+
+### 8.1 EM Jammer Acquisition Payload Schema
+
+```json
+{
+  "event_id": "stage2_l3_em_jammer_acquired",
+  "stage": 2,
+  "level": 3,
+  "equipment": "em_jammer",
+  "status": "acquired",
+  "deferred_activation": true,
+  "description": "Electromagnetic jammer salvaged from the central security grid node following interceptor swarm neutralization."
+}
+```
+
+> [!NOTE]
+> All narrative descriptions and dialogue hooks remain non-canonical stubs pending official creative writing deliverables.

@@ -18,10 +18,10 @@ We have successfully processed all 44 delivered files (35 unchanged originals + 
    - Scaled uniformly to $0.22 \times 0.22$ ($\approx 132.4 \times 73.9\text{px}$) inside the visual subtree, preserving the $80.0\text{px}$ proximity detection radius and unscaled physics root (`scale = Vector2.ONE`).
    - Dual progress rings render via an overlay `Indicator` node ($z=2$) above the sprite, ensuring extraction feedback is crisp and legible.
    - Procedural vector fallback is preserved and activates automatically if official art is disabled or textures are removed.
-2. **Stage 2 Guard Enemies: INTEGRATION PROGRESS**
-   - Guard Bot (`idle.png`, `attacking.png`): **INTEGRATED** into `scenes/enemies/guard_bot.tscn` (Milestone 6).
+2. **Stage 2 Guard Enemies: ALL BATCH 02 GUARDS INTEGRATED**
+   - Guard Bot (`guard_bot_idle.png`, `guard_bot_attacking.png`): **INTEGRATED** into `scenes/enemies/guard_bot.tscn` (Milestone 6).
    - Guard Satellite (`guard_satellite_idle.png`, `guard_satellite_attacking.png`): **INTEGRATED** into `scenes/enemies/guard_satellite.tscn` (Milestone 7).
-   - Guard Drone (`idle.png`, `attacking.png`): Staged in `res://assets/sprites/enemies/guard_drone/` and reserved for future milestones.
+   - Guard Drone (`guard_drone_idle.png`, `guard_drone_attacking.png`): **INTEGRATED** into `scenes/enemies/guard_drone.tscn` (Milestone 8). All 6 guard sprites delivered in Batch 02 are now fully operational in gameplay.
 3. **Nirawak 1 Spacecraft (2 assets): IMPORTED & AWAITING CONFIRMATION**
    - Staged in `res://assets/sprites/npc/nirawak1/` preserving both `before-extraction.png` and `after-extraction.png`.
    - Visual relationship preserved without inventing unconfirmed narrative roles.
