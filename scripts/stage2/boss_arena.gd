@@ -6,6 +6,8 @@ extends Node2D
 
 signal level_completed(level: int)
 signal phase_1_completed
+signal phase_2_started
+signal stage_completed(payload: Dictionary)
 
 const GUARD_CRUISER_SCENE = preload("res://scenes/bosses/guard_cruiser.tscn")
 const PROJECTILE_SCENE = preload("res://scenes/projectile.tscn")
@@ -16,6 +18,7 @@ const PROJECTILE_SCENE = preload("res://scenes/projectile.tscn")
 
 var finished: bool = false
 var game_won: bool = false
+var stage_2_completed: bool = false
 var stars: Array[Vector2] = []
 var star_offset: float = 0.0
 
@@ -154,6 +157,8 @@ func start_level(target_level: int, starting_hp: int = 12) -> void:
 			boss.phase_threshold_reached.connect(_on_boss_phase_threshold_reached)
 		if not boss.health_changed.is_connected(_on_boss_health_changed):
 			boss.health_changed.connect(_on_boss_health_changed)
+		if not boss.defeated.is_connected(_on_boss_defeated):
+			boss.defeated.connect(_on_boss_defeated)
 
 		boss.position = Vector2(640.0, 150.0)
 		boss.health = 400
@@ -225,7 +230,7 @@ func _on_boss_phase_threshold_reached(phase: int) -> void:
 			message.visible = true
 			var boss_hp: int = boss.health if is_instance_valid(boss) else 200
 			var boss_max: int = boss.max_health if is_instance_valid(boss) else 400
-			message.text = "STAGE 2 / LEVEL 4 COMPLETE\nGUARD CRUISER — PHASE 1 DISABLED\nBOSS HP: %d / %d\n[PHASE 2 — NEXT MILESTONE]\nPress [R] to replay Stage 2 from Checkpoint" % [
+			message.text = "STAGE 2 / LEVEL 4 COMPLETE\nGUARD CRUISER — PHASE 1 DISABLED\nBOSS HP: %d / %d\n\nPress [Space/Enter] for Level 5 (Phase 2)\nPress [R] to replay Stage 2 from Checkpoint" % [
 				boss_hp, boss_max
 			]
 
@@ -234,7 +239,89 @@ func _on_boss_phase_threshold_reached(phase: int) -> void:
 		_update_debug_overlay()
 
 
+func advance_to_next_level() -> bool:
+	if not (finished and game_won and current_level == 4):
+		return false
+	if not is_instance_valid(player) or not player.alive:
+		return false
+	if not is_instance_valid(boss) or boss.health > boss.phase_1_threshold or boss.is_destroyed:
+		return false
+
+	start_phase_2()
+	return true
+
+
+func start_phase_2() -> void:
+	current_level = 5
+	finished = false
+	game_won = false
+
+	if is_instance_valid(message):
+		message.visible = false
+
+	_clear_spawned_projectiles()
+
+	if is_instance_valid(player) and player.alive:
+		player.set_physics_process(true)
+	if is_instance_valid(weapon_controller):
+		weapon_controller.set_firing_enabled(is_primary_weapon_acquired())
+
+	if is_instance_valid(boss):
+		boss.start_phase_2()
+
+	phase_2_started.emit()
+	_update_hud()
+	_update_debug_overlay()
+
+
+func _on_boss_defeated() -> void:
+	if finished and not game_won:
+		# If player has already died, Game Over stands deterministically
+		return
+
+	finished = true
+	game_won = true
+	stage_2_completed = true
+
+	if is_instance_valid(player):
+		player.set_physics_process(false)
+	if is_instance_valid(weapon_controller):
+		weapon_controller.set_firing_enabled(false)
+
+	_clear_spawned_projectiles()
+
+	var stage2_complete_payload: Dictionary = {
+		"event_id": "stage2_completed",
+		"stage": 2,
+		"current_level": 5,
+		"boss_name": "Guard Cruiser",
+		"remaining_player_health": player.health if is_instance_valid(player) else 0,
+		"boss_final_health": 0,
+		"boss_max_health": 400,
+		"stage_completed": true,
+		"next_stage": 3,
+		"next_stage_available": false
+	}
+
+	stage_acquisitions["stage2_completed"] = true
+	stage_acquisitions["stage2_complete_payload"] = stage2_complete_payload
+
+	stage_completed.emit(stage2_complete_payload)
+	level_completed.emit(5)
+
+	if is_instance_valid(message):
+		message.visible = true
+		message.text = "STAGE 2 COMPLETE!\n\nGUARD CRUISER DEFEATED\nBOSS HP: 000 / 400\n\n[STAGE 2 LEVEL 5 COMPLETE]\n[STAGE 3 — NOT YET IMPLEMENTED]\n\nPress [R] to replay Stage 2 from Checkpoint"
+
+	_update_hud()
+	_update_debug_overlay()
+
+
 func _on_player_died() -> void:
+	if finished and game_won:
+		# If boss was already defeated, victory stands deterministically
+		return
+
 	finished = true
 	game_won = false
 
@@ -301,14 +388,15 @@ func _update_debug_overlay() -> void:
 
 	var speed: float = player.movement_velocity.length()
 	var state_str: String = player.get_regen_state_string() if player.has_method("get_regen_state_string") else ""
+	var p_phase: int = boss.current_phase if is_instance_valid(boss) else 1
 	var b_hp: int = boss.health if is_instance_valid(boss) else 0
-	var b_stun: String = "STUNNED (%.1fs)" % boss.stun_timer if (is_instance_valid(boss) and boss.is_stunned) else "ACTIVE"
+	var b_stun: String = "STUNNED (%.1fs)" % boss.stun_timer if (is_instance_valid(boss) and boss.is_stunned) else ("DEFEATED" if (is_instance_valid(boss) and boss.is_destroyed) else "ACTIVE")
 	var jammer_cd: float = em_jammer_controller.get_cooldown_remaining() if is_instance_valid(em_jammer_controller) else 0.0
 
-	debug_label.text = "[DEBUG OVERLAY — F3 to toggle]\nStage: %d | Level: %d | Mode: Full Arcade Boss Arena\nPlayer HP: %02d / %02d | Speed: %5.1f px/s | Regen: %s\nBoss HP: %d / 400 | Phase: 1 (Threshold: 200) | Boss State: %s\nEM Jammer: %s (CD: %.1fs) | Weapon: ACTIVE" % [
+	debug_label.text = "[DEBUG OVERLAY — F3 to toggle]\nStage: %d | Level: %d | Mode: Full Arcade Boss Arena\nPlayer HP: %02d / %02d | Speed: %5.1f px/s | Regen: %s\nBoss HP: %d / 400 | Phase: %d | Boss State: %s\nEM Jammer: %s (CD: %.1fs) | Weapon: ACTIVE" % [
 		stage_number, current_level,
 		player.health, player.max_health, speed, state_str,
-		b_hp, b_stun,
+		b_hp, p_phase, b_stun,
 		"READY" if (is_instance_valid(em_jammer_controller) and em_jammer_controller.is_ready()) else "COOLING",
 		jammer_cd
 	]
@@ -323,5 +411,16 @@ func _unhandled_key_input(event: InputEvent) -> void:
 				_update_debug_overlay()
 		elif event.keycode == KEY_R or event.physical_keycode == KEY_R:
 			revive_at_stage_checkpoint()
+		elif event.keycode == KEY_SPACE or event.keycode == KEY_ENTER:
+			if finished and game_won and current_level == 4:
+				advance_to_next_level()
 		elif event.keycode == KEY_ESCAPE:
 			get_tree().quit()
+
+
+func is_stage2_completed() -> bool:
+	return stage_acquisitions.get("stage2_completed", false)
+
+
+func is_phase_2_active() -> bool:
+	return current_level == 5 and not finished

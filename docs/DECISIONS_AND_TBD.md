@@ -283,5 +283,28 @@ This document tracks unresolved balance parameters, provisional features, and pe
   1. *Stun Duration Impact:* A 10.0-second stun window provides substantial uninterrupted firing time ($\approx 120$ player blasters at $12\text{ shots/s}$). Leads should evaluate during manual playtesting whether 10.0s feels rewarding or makes Phase 1 too forgiving.
   2. *Jammer Range:* The provisional 600 px range covers nearly the full vertical height of the $720\text{px}$ arena when positioned near the bottom edge. Should the range be tightened to $450\text{–}500\text{ px}$ to demand closer player proximity?
   3. *Input Mapping:* Key `E` is provisionally bound for `em_jammer`. Does the team prefer right mouse button (`MOUSE_BUTTON_RIGHT`) or `Space` as an alternative primary active equipment binding?
-  4. *Phase 2 Tease:* Phase 2 and Dead sprites remain strictly staged and hidden, ready for activation when Milestone 10 is authorized.
+  4. *Phase 2 Tease:* Phase 2 and Dead sprites were successfully activated in Milestone 10.
+- **Status:** **Configurable Baseline / Subject to Lead Review during playtesting.**
+
+---
+
+## 16. Milestone 10: Stage 2 Level 5 Configurable Parameters & Balancing Items
+
+- **Date:** 2026-11-24
+- **Scope:** Guard Cruiser Mini-Boss Phase 2, Final Defeat, and Stage 2 Completion.
+- **Configurable Balance Parameters (`@export`):**
+  1. **Guard Cruiser Phase 2 Combat (`scripts/bosses/guard_cruiser.gd`):**
+     - `@export var phase_2_move_speed: float = 115.0`: Horizontal sweep velocity in Phase 2 (increased from 85.0 px/s).
+     - `@export var phase_2_attack_interval: float = 2.0`: Attack cycle duration in Phase 2 (accelerated from 2.6s).
+     - `@export var phase_2_burst_count: int = 5`: Projectiles per volley in Phase 2 (increased from 3).
+     - `@export var phase_2_burst_spread_angle: float = 20.0`: Total fan angular spread in degrees (expanded from 12.0°).
+     - `@export var phase_2_projectile_speed: float = 350.0`: Projectile velocity in Phase 2 (increased from 300.0 px/s).
+     - `@export var phase_2_threshold: int = 0`: Final defeat health threshold ($200 \to 0\text{ HP}$).
+  2. **Boss Arena Progression (`scripts/stage2/boss_arena.gd`):**
+     - `@export var level_5_boss_start_health: int = 200`: Initial health clamped upon entering Level 5.
+- **Open Balancing & Design Questions for Technical / Creative Leads:**
+  1. *Phase 2 Projectile Density:* 5 bolts across $20^\circ$ at $350\text{ px/s}$ creates a wide barrage. Does this create appropriate pressure without feeling unavoidable?
+  2. *Stun Utility in Phase 2:* Because the EM Jammer cooldown ($30\text{s}$) persists, a player who used the jammer late in Phase 1 will enter Phase 2 with the jammer on cooldown, requiring tactical evasive play before earning a second stun. Does this cooldown cadence feel rewarding?
+  3. *Transition Pacing:* Requiring a manual [Space/Enter] press between Phase 1 and Phase 2 gives the player time to observe their remaining HP and prepare. Is this preferred over an immediate automatic transition?
+  4. *Defeat Screen Permanence:* The boss remains visible as a shattered hull (`miniboss_dead.png`) behind the banner rather than vanishing. Leads should confirm whether explosion VFX / debris particles should be requested for Phase 3 polish.
 - **Status:** **Configurable Baseline / Subject to Lead Review during playtesting.**

@@ -85,12 +85,16 @@ To complete visual fidelity for currently implemented gameplay (Stage 1 Levels 1
 
 ---
 
-## 5. Milestone 9 Asset Integration Status & Feedback
+## 5. Milestone 10 Asset Integration Status & Feedback
 
-1. **Stage 2 Mini-Boss Phase 1 Sprite (`miniboss_alive_p1.png`):**
-   - Successfully integrated in `scenes/bosses/guard_cruiser.tscn` scaled $0.4\times$ and rotated $\pi$ ($180^\circ$) to face South toward the player in the arcade arena.
-   - P2 animated variant (`miniboss_alive_p2.png`) and defeat sprite (`miniboss_dead.png`) remain staged and reserved for Milestone 10 (Phase 2 & Boss Defeat).
+1. **Stage 2 Mini-Boss Full Lifecycle Sprites (`miniboss_alive_p1.png`, `miniboss_alive_p2.png`, `miniboss_dead.png`):**
+   - All three delivered mini-boss sprites are now **INTEGRATED / OPERATIONAL** in `scenes/bosses/guard_cruiser.tscn` scaled $0.4\times$ and rotated $\pi$ ($180^\circ$) to face South toward the player in the arcade arena.
+   - `miniboss_alive_p1.png` is active during Level 4 (Phase 1).
+   - `miniboss_alive_p2.png` is active during Level 5 (Phase 2).
+   - `miniboss_dead.png` is active upon final defeat at 0 HP and persists behind the Stage 2 completion banner.
+   - Strict mutual exclusivity guarantees no overlapping rendering between states.
 2. **Audio SFX Requests for Boss Combat (Priority P1):**
    - **EM Jammer Pulse SFX:** High-tech electromagnetic surge/EMP discharge sound ($\approx 0.5\text{–}1.0\text{s}$).
    - **Cruiser Plasma Burst SFX:** Heavy energy cannon volley shot ($\approx 0.3\text{–}0.5\text{s}$).
    - **Electrical Stun Loop:** Low buzzing/crackling electrical loop for stunned capital ship ($\approx 2.0\text{s}$ seamless loop).
+   - **Cruiser Catastrophic Destruction SFX:** Deep reverberating explosion / reactor core failure sound when HP reaches 0 ($\approx 2.0\text{s}$).

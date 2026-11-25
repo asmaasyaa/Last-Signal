@@ -214,3 +214,25 @@ Milestone 9 integrates the official Phase 1 Guard Cruiser mini-boss artwork from
    - Zero damage guarantee verified by automated test assertions.
 3. **Automated Verification Baseline:**
    - 1,451 total automated assertions across 12 test suites (Milestones 1 through 9) passing with 0 failures.
+
+---
+
+## 12. Milestone 10: Stage 2 Level 5 Guard Cruiser Phase 2 & Defeat Art Integration Results
+
+Milestone 10 activates the remaining official Guard Cruiser artwork from Batch 01, completing the full visual lifecycle of the Stage 2 mini-boss encounter:
+
+1. **Guard Cruiser Phase 2 & Defeat Official Artwork Integration (`scenes/bosses/guard_cruiser.tscn`):**
+   - **Delivered Sprites:**
+     - Phase 1: `assets/sprites/bosses/stage2_miniboss/miniboss_alive_p1.png` ($601 \times 321\text{ px}$) — active during Level 4.
+     - Phase 2: `assets/sprites/bosses/stage2_miniboss/miniboss_alive_p2.png` ($601 \times 321\text{ px}$) — **ACTIVE / OPERATIONAL** during Level 5 ($200 \to 0\text{ HP}$).
+     - Defeat: `assets/sprites/bosses/stage2_miniboss/miniboss_dead.png` ($601 \times 321\text{ px}$) — **ACTIVE / OPERATIONAL** upon reaching $0\text{ HP}$ and on the victory screen.
+   - **Mutual Exclusivity:** `update_visual_state()` in `scripts/bosses/guard_cruiser.gd` guarantees strict mutual exclusivity:
+     - Phase 1: `Phase1Sprite` visible, `Phase2Sprite` hidden, `DeadSprite` hidden.
+     - Phase 2: `Phase1Sprite` hidden, `Phase2Sprite` visible, `DeadSprite` hidden.
+     - Defeated: `Phase1Sprite` hidden, `Phase2Sprite` hidden, `DeadSprite` visible.
+   - **Scale, Rotation & Alignment:** All three sprites share identical scale ($0.4 \times 0.4$, $\approx 240.4 \times 128.4\text{ px}$) and rotation ($\pi$, $180^\circ$) facing South. Physics root scale remains strictly `Vector2.ONE`.
+   - **Procedural Fallback Continuity:** `Visuals/ProceduralFallback` (`scripts/bosses/guard_cruiser_visual.gd`) features Phase 2 amber hull plating with active reactor flares, and upon defeat shifts to a shattered, smoking dark hull silhouette.
+2. **Full Batch 01 Stage 2 Mini-Boss Coverage Achieved:**
+   - All 3 delivered mini-boss sprites from Batch 01 are now fully connected, active, and operational in runtime gameplay.
+3. **Automated Verification Baseline:**
+   - 1,614 total automated assertions across 13 test suites (Milestones 1 through 10) passing with 0 failures.

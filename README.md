@@ -1,17 +1,17 @@
-# LAST SIGNAL - Godot Prototype (Milestone 9 — Stage 2 Level 4: Guard Cruiser Mini-Boss Phase 1 & EM Jammer Activation)
+# LAST SIGNAL - Godot Prototype (Milestone 10 — Stage 2 Level 5: Guard Cruiser Phase 2, Final Defeat & Stage 2 Completion)
 
-> **Development Status:** WIP — Milestone 9 implemented, manual GUI QA pending.
-> A verified 2D space SHMUP prototype in Godot 4.7.2 featuring Stage 1 (Levels 1–5) and Stage 2 (Levels 1–4), introducing horizontal side-scrolling gameplay, Guard Bot security automata, Guard Satellite defense units with telegraph-based accurate lasers, Guard Drone kamikaze interceptors, EM Jammer active equipment (120° directional cone stun), full arcade mini-boss arena, Guard Cruiser mini-boss Phase 1 combat (400 to 200 HP threshold), official mini-boss Phase 1 artwork integration, independent Stage 2 checkpoint revival, and comprehensive automated regression tests (1,451 / 1,451 passing assertions across 12 test suites).
+> **Development Status:** WIP — Milestone 10 implemented, manual GUI QA pending.
+> A verified 2D space SHMUP prototype in Godot 4.7.2 featuring Stage 1 (Levels 1–5) and Stage 2 (Levels 1–5), introducing horizontal side-scrolling gameplay, Guard Bot security automata, Guard Satellite defense units with telegraph-based accurate lasers, Guard Drone kamikaze interceptors, EM Jammer active equipment (120° directional cone stun), full arcade mini-boss arena, Guard Cruiser mini-boss two-phase combat encounter (Phase 1: 400 to 200 HP threshold; Phase 2: 200 to 0 HP final defeat), official mini-boss Phase 1, Phase 2, and Defeat artwork integration, independent Stage 2 checkpoint revival, Stage 2 completion event payload, and comprehensive automated regression tests (1,614 / 1,614 passing assertions across 13 test suites).
 
 ## Setup
 
 1. Download **Godot 4.7.2 stable — Standard** from https://godotengine.org/download/ (not .NET).
 2. Extract the starter ZIP to a local folder.
 3. In Godot Project Manager, click **Import**, locate this folder's `project.godot`, and open it.
-4. Press **F6** from `scenes/main.tscn` (Stage 1 direct gameplay), `scenes/stage2/stage2_main.tscn` (Stage 2 side-scrolling), `scenes/stage2/boss_arena.tscn` (Stage 2 Level 4 Boss Arena), or `scenes/ui/main_menu.tscn` (menu flow), or **F5** to start.
-5. Move the mouse to steer the ship. In Stage 1, evade/destroy asteroids for 30 seconds. In Stage 2 Level 1, survive the hostile sector for 15 seconds against Guard Bots. In Stage 2 Level 2, survive for 20 seconds against Guard Satellites and accurate laser beams. In Stage 2 Level 3, eliminate 5 Guard Drone interceptors to recover the EM Jammer. In Stage 2 Level 4, face the Guard Cruiser mini-boss in the arcade arena: fire blasters with Left Mouse Button, trigger the EM Jammer with **E** to stun the cruiser for 10 seconds, and reduce its HP from 400 to 200 to complete Phase 1. Press **R** to restart/revive, **Esc** to quit.
+4. Press **F6** from `scenes/main.tscn` (Stage 1 direct gameplay), `scenes/stage2/stage2_main.tscn` (Stage 2 side-scrolling), `scenes/stage2/boss_arena.tscn` (Stage 2 Boss Arena), or `scenes/ui/main_menu.tscn` (menu flow), or **F5** to start.
+5. Move the mouse to steer the ship. In Stage 1, evade/destroy asteroids for 30 seconds. In Stage 2 Level 1, survive the hostile sector for 15 seconds against Guard Bots. In Stage 2 Level 2, survive for 20 seconds against Guard Satellites and accurate laser beams. In Stage 2 Level 3, eliminate 5 Guard Drone interceptors to recover the EM Jammer. In Stage 2 Level 4, face the Guard Cruiser mini-boss in the arcade arena: fire blasters with Left Mouse Button, trigger the EM Jammer with **E** to stun the cruiser for 10 seconds, and reduce its HP from 400 to 200 to complete Phase 1. Press **Space/Enter** to advance to Stage 2 Level 5 (Phase 2): combat intensifies with 5-shot spreads and higher mobility (115 px/s), continuing until the cruiser is defeated at 0 HP. Press **R** to restart/revive, **Esc** to quit.
 
-## Current Prototype Implementation Status (Milestone 9 — Stage 2 Level 4)
+## Current Prototype Implementation Status (Milestone 10 — Stage 2 Level 5)
 
 - **Stage 1 (Levels 1–5 Complete):**
   - **Level 1:** Unarmed navigation & evasion through small asteroids.
@@ -65,16 +65,36 @@
     - Taking damage reduces HP from 400 down to 200.
     - Reaching exactly $200\text{ HP}$ triggers `phase_threshold_reached` and completes Phase 1 (`phase_1_completed = true`).
     - Boss is NOT destroyed or defeated (health is strictly clamped at 200 HP).
-    - Victory banner proclaims:
+    - Completion banner prompts:
       ```
       STAGE 2 / LEVEL 4 COMPLETE
       GUARD CRUISER — PHASE 1 DISABLED
       BOSS HP: 200 / 400
-      [PHASE 2 — NEXT MILESTONE]
-      Press [R] to replay Stage 2 from Checkpoint
+      Press [Space/Enter] for Level 5
       ```
-  - **Stage 2 Checkpoint Revive:** Player death in Level 4 prompts [R] to revive at **Stage 2 Level 1** at full $12\text{ HP}$ with primary weapon and shield retained, while unearned EM Jammer is cleared. Does NOT reset to Stage 1.
-  - **Milestone Scope Boundary:** Phase 2 combat and Stage 2 Level 5 are strictly deferred.
+  - **Stage 2 Level 5 (Guard Cruiser Phase 2, Final Defeat & Stage 2 Completion):**
+    - **Single Boss Identity Continuity:** The exact same `GuardCruiser` and `BossArena` node instances persist across Phase 1 and Phase 2 without re-instantiation (`arena.boss == boss_ref`).
+    - **Phase 2 Transition:** Pressing [Space/Enter] in Level 4 validates Phase 1 completion, transitions `current_level = 5`, updates HUD to `STAGE 2 / LEVEL 5` and `200 / 400 HP`, unfreezes player controls, and initiates Phase 2 combat.
+    - **Health System & Clamping:** Guard Cruiser health reduces from $200\text{ HP}$ down to $0\text{ HP}$. Damage cannot go negative and clamps cleanly at $0\text{ HP}$. Defeat triggers exactly once.
+    - **Official Artwork Switching:** `Phase1Sprite` is hidden; `Phase2Sprite` (`assets/sprites/bosses/stage2_miniboss/miniboss_alive_p2.png`) displays during Phase 2; upon defeat, `DeadSprite` (`miniboss_dead.png`) becomes visible.
+    - **Enhanced Phase 2 Behaviors:**
+      - Increased patrol drift speed: $115.0\text{ px/s}$ (`phase_2_move_speed`).
+      - Faster attack cadence: $2.0\text{s}$ interval (`phase_2_attack_interval`).
+      - 5-projectile energy burst (`phase_2_burst_count = 5`) spread across $\approx 20^\circ$ (`phase_2_burst_spread_angle`).
+      - Increased projectile speed: $350.0\text{ px/s}$ (`phase_2_projectile_speed`), dealing 1 dmg per bolt.
+    - **EM Jammer Continuity:** Jammer acquisition and cooldown strictly persist across the phase boundary. The Phase 2 cruiser can be stunned for 10.0 seconds with a zero damage guarantee, canceling ongoing attack windups.
+    - **Final Defeat & Stage 2 Completion:**
+      - Reaching 0 HP emits `defeated`, deactivates collision monitoring, clears remaining projectiles, emits `stage_completed(payload)` and `level_completed(5)`.
+      - Completion banner proclaims:
+        ```
+        STAGE 2 COMPLETE!
+        GUARD CRUISER DEFEATED
+        [STAGE 3 — NOT YET IMPLEMENTED]
+        Press [R] to replay Stage 2 from Checkpoint
+        ```
+      - Boss node persists on screen with `miniboss_dead.png`.
+    - **Stage 2 Checkpoint Revive:** Player death in Level 5 revives strictly at **Stage 2 Level 1** at full $12\text{ HP}$ with primary weapon and shield retained, while unearned EM Jammer is cleared. Does NOT reset to Stage 1.
+    - **Milestone Scope Boundary:** Stage 3 gameplay and scenes are strictly deferred.
 
 ## Project files
 

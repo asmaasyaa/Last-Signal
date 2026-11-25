@@ -9,6 +9,8 @@ extends Node2D
 @export var engine_color: Color = Color(0.20, 0.70, 1.0, 0.9)
 @export var is_charging_attack: bool = false
 @export var is_stunned: bool = false
+@export var current_phase: int = 1
+@export var is_destroyed: bool = false
 
 var anim_time: float = 0.0
 
@@ -28,7 +30,36 @@ func set_stunned(stunned_state: bool) -> void:
 	queue_redraw()
 
 
+func set_phase(p_phase: int) -> void:
+	current_phase = p_phase
+	queue_redraw()
+
+
+func set_destroyed(destroyed: bool) -> void:
+	is_destroyed = destroyed
+	queue_redraw()
+
+
 func _draw() -> void:
+	# Defeated procedural state: shattered smoking dark hull
+	if is_destroyed:
+		var wreck_pts: PackedVector2Array = [
+			Vector2(0.0, 50.0),
+			Vector2(-40.0, 35.0),
+			Vector2(-100.0, 10.0),
+			Vector2(-115.0, -20.0),
+			Vector2(-70.0, -45.0),
+			Vector2(70.0, -45.0),
+			Vector2(115.0, -20.0),
+			Vector2(100.0, 10.0),
+			Vector2(40.0, 35.0)
+		]
+		draw_colored_polygon(wreck_pts, Color(0.08, 0.09, 0.12, 0.95))
+		draw_polyline(wreck_pts + PackedVector2Array([wreck_pts[0]]), Color(0.25, 0.28, 0.35, 0.8), 2.0)
+		draw_line(Vector2(-30.0, 15.0), Vector2(25.0, -20.0), Color(0.4, 0.15, 0.1, 0.9), 2.5)
+		draw_line(Vector2(10.0, 25.0), Vector2(-20.0, -10.0), Color(0.3, 0.12, 0.08, 0.9), 2.0)
+		return
+
 	# Cruiser faces downward (+Y is forward / towards the player)
 	# 1. Rear Engine Plumes (top edge, Y around -60 to -85)
 	var thruster_flicker: float = 6.0 * sin(anim_time * 2.0)

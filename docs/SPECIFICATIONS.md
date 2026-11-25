@@ -563,7 +563,7 @@ The following mechanics are **NOT part of the approved Stage 1 design** and must
     STAGE 2 / LEVEL 4 COMPLETE
     GUARD CRUISER — PHASE 1 DISABLED
     BOSS HP: 200 / 400
-    [PHASE 2 — NEXT MILESTONE]
+    Press [Space/Enter] for Level 5
     Press [R] to replay Stage 2 from Checkpoint
     ```
 - **Stage 2 Checkpoint & Revival Semantics:**
@@ -574,4 +574,90 @@ The following mechanics are **NOT part of the approved Stage 1 design** and must
   - Reviving in Stage 2 does **NOT** reset the player to Stage 1.
 - **Milestone Scope Boundary:**
   - Milestone 9 is strictly limited to Phase 1 of the Guard Cruiser encounter.
-  - Phase 2 combat patterns, Phase 2 sprites, boss destruction, and Stage 2 Level 5 are strictly deferred to future milestones.
+
+---
+
+## 18. Milestone 10: Stage 2 Level 5 — Guard Cruiser Phase 2, Final Defeat & Stage 2 Completion
+
+- **Level Context:** Stage 2 Level 5 concludes Stage 2 gameplay. It constitutes the final combat phase of the Guard Cruiser mini-boss encounter in the arcade arena (`scenes/stage2/boss_arena.tscn`).
+- **Single Boss Identity Continuity (ONE BOSS, TWO PHASES):**
+  - The exact same `GuardCruiser` and `BossArena` node instances persist across Phase 1 (Level 4) and Phase 2 (Level 5).
+  - No second boss entity is spawned, instantiated, or queued.
+  - `arena.boss == boss_ref` and `arena.boss.get_instance_id() == boss_instance_id` remain strictly true throughout the entire encounter.
+  - Player HP, acquired primary weapons, shield hardware, and EM Jammer equipment persist across the transition without reset or within-stage restoration.
+- **Phase 2 Advance Mechanics:**
+  - When Phase 1 concludes at $200\text{ HP}$, combat freezes and the banner prompts `Press [Space/Enter] for Level 5`.
+  - Pressing `Space` or `Enter` invokes `advance_to_next_level()`.
+  - Validation requires: Level 4 finished, player alive, boss HP $\le 200$, and Phase 2 not yet started.
+  - Upon validation:
+    - `current_level` updates to `5`.
+    - `finished` and `game_won` reset to `false` for active battle.
+    - Player movement and blasters are re-enabled.
+    - `boss.start_phase_2()` is called.
+    - HUD updates to `STAGE 2 / LEVEL 5` and `GUARD CRUISER: 200 / 400 HP`.
+    - `phase_2_started` signal is emitted.
+- **Boss Phase 2 Architecture & Official Art:**
+  - **Visual Presentation:**
+    - `Phase1Sprite` is hidden.
+    - `Phase2Sprite` (`assets/sprites/bosses/stage2_miniboss/miniboss_alive_p2.png`, $601 \times 321\text{ px}$) becomes VISIBLE.
+    - Scaled to $0.4 \times 0.4$ and rotated $\pi$ ($180^\circ$) to face South toward the player.
+    - Neutral root scale `Vector2.ONE` and central hull collision shape `RectangleShape2D(230, 110)` are preserved.
+    - Procedural fallback updates to Phase 2 amber hull plating with active reactor flares.
+  - **Phase 2 Combat Parameters:**
+    - `phase_2_move_speed` = $115.0\text{ px/s}$ (increased from Phase 1's $85.0\text{ px/s}$).
+    - `phase_2_attack_interval` = $2.0\text{s}$ (accelerated from Phase 1's $2.6\text{s}$).
+    - `phase_2_burst_count` = $5$ projectiles per volley (expanded from Phase 1's $3$).
+    - `phase_2_burst_spread_angle` = $20.0^\circ$ (wider spread from Phase 1's $12.0^\circ$).
+    - `phase_2_projectile_speed` = $350.0\text{ px/s}$ (accelerated from Phase 1's $300.0\text{ px/s}$).
+    - Projectiles deal $1\text{ HP}$ damage per bolt on player impact and maintain Friendly Fire Immunity to boss.
+- **Health System & Final Defeat Lifecycle (200 HP to 0 HP):**
+  - Boss `can_take_damage` is re-enabled in Phase 2.
+  - Taking damage deducts HP from $200$ down toward $0$.
+  - Reaching $0\text{ HP}$ triggers `_on_defeated()`:
+    - `is_destroyed` is set to `true`.
+    - `can_take_damage` is set to `false`.
+    - `health` is strictly clamped at $0$ (never negative).
+    - `defeated` signal is emitted **exactly once**.
+    - Collision shapes, `monitoring`, and `monitorable` are deferred disabled (`set_deferred`).
+    - Visual state switches: `Phase1Sprite` and `Phase2Sprite` are hidden; `DeadSprite` (`miniboss_dead.png`) becomes VISIBLE.
+    - Boss node is **NOT** queued free; it persists on screen as a wrecked hull behind the victory banner.
+- **EM Jammer Continuity & Phase 2 Stun Mechanics:**
+  - EM Jammer acquisition status and remaining cooldown strictly persist across the Phase 1 $\to$ Phase 2 boundary.
+  - Activating the EM Jammer in Phase 2 applies a $10.0\text{s}$ non-damaging stun (`apply_stun(10.0)`).
+  - Stun halts cruiser movement, resets active attack windup to cooldown, and maintains full vulnerability to player weapons.
+  - Zero damage guarantee is strictly verified.
+- **Stage 2 Completion & Narrative Interface:**
+  - Guard Cruiser defeat triggers `_on_boss_defeated()` in `BossArena`:
+    - `stage_2_completed` is set to `true`.
+    - `finished` is set to `true`, `game_won` is set to `true`.
+    - Player weapon firing is disabled.
+    - Surviving projectiles and enemy projectiles are cleared.
+    - `stage_completed(payload)` and `level_completed(5)` signals are emitted.
+    - Narrative completion payload:
+      ```json
+      {
+        "event_id": "stage2_completed",
+        "stage": 2,
+        "current_level": 5,
+        "boss_name": "Guard Cruiser",
+        "boss_final_health": 0,
+        "stage_completed": true,
+        "next_stage": 3,
+        "next_stage_available": false
+      }
+      ```
+    - Completion banner proclaims:
+      ```
+      STAGE 2 COMPLETE!
+      GUARD CRUISER DEFEATED
+      [STAGE 3 — NOT YET IMPLEMENTED]
+      Press [R] to replay Stage 2 from Checkpoint
+      ```
+- **Stage 2 Checkpoint & Tie-Breaking Semantics:**
+  - Player death in Level 5 displays `SHIP DESTROYED (STAGE 2 / LEVEL 5)\nPress [R] to Revive at Stage 2 Checkpoint`.
+  - Pressing [R] revives strictly at **Stage 2 Level 1** at full $12\text{ HP}$ with primary weapon and shield retained; unearned EM Jammer is cleared. Does NOT reset to Stage 1.
+  - Deterministic tie-breaking:
+    - If player dies before or simultaneously with boss defeat, player loss stands (`game_won = false`).
+    - If boss defeat is confirmed while player is alive, victory stands (`game_won = true`).
+- **Milestone Scope Boundary:**
+  - Stage 3 gameplay, enemies, final boss, and scenes are strictly deferred to future milestones.

@@ -249,3 +249,34 @@ With Milestone 9 introducing the Guard Cruiser mini-boss, the boss arena, and ac
 
 > [!NOTE]
 > All narrative descriptions and dialogue hooks remain non-canonical stubs pending official creative writing deliverables.
+
+---
+
+## 10. Stage 2 Level 5 Semantic Dialogue Event Hooks (Milestone 10)
+
+With Milestone 10 introducing Phase 2 of the Guard Cruiser encounter, final boss defeat, and Stage 2 completion, the following semantic event hooks are available for dialogue systems and cutscene triggers:
+
+| Event ID | Trigger Timing | Associated Payload / Context |
+| :--- | :--- | :--- |
+| `stage2_l5_phase2_started` | Player advances from Level 4 to Level 5 | Guard Cruiser emergency reactor online, Phase 2 aggression protocol |
+| `stage2_l5_guard_cruiser_defeated` | Guard Cruiser reaches 0 HP | Catastrophic reactor rupture, warship propulsion and weapons disabled |
+| `stage2_completed` | Arena transitions to completion state | Stage 2 security sector neutralized, access route toward Stage 3 revealed |
+
+### 10.1 Stage 2 Completion Payload Schema
+
+```json
+{
+  "event_id": "stage2_completed",
+  "stage": 2,
+  "current_level": 5,
+  "boss_name": "Guard Cruiser",
+  "boss_final_health": 0,
+  "stage_completed": true,
+  "next_stage": 3,
+  "next_stage_available": false,
+  "description": "Guard Cruiser defeated. Hostile defense perimeter compromised. Stage 3 warp corridor coordinates located."
+}
+```
+
+> [!NOTE]
+> All narrative descriptions and dialogue hooks remain non-canonical stubs pending official creative writing deliverables.
