@@ -435,13 +435,13 @@ func _suite_f_stage_2_completion() -> void:
 	assert_eq(payload.get("boss_final_health"), 0, "Payload boss_final_health is 0")
 	assert_eq(payload.get("stage_completed"), true, "Payload stage_completed is true")
 	assert_eq(payload.get("next_stage"), 3, "Payload next_stage is 3")
-	assert_eq(payload.get("next_stage_available"), false, "Payload next_stage_available is false (Stage 3 not implemented)")
+	assert_eq(payload.get("next_stage_available"), true, "Payload next_stage_available is true (Stage 3 authorized in M11)")
 
 	# Completion Message & Artwork
 	assert_true(arena.message.visible, "Victory message is visible")
 	assert_true(arena.message.text.contains("STAGE 2 COMPLETE!"), "Banner proclaims STAGE 2 COMPLETE!")
 	assert_true(arena.message.text.contains("GUARD CRUISER DEFEATED"), "Banner proclaims GUARD CRUISER DEFEATED")
-	assert_true(arena.message.text.contains("STAGE 3 — NOT YET IMPLEMENTED"), "Banner confirms Stage 3 not yet implemented")
+	assert_true(arena.message.text.contains("Press [Space/Enter] to Begin Stage 3"), "Banner prompts to begin Stage 3")
 	assert_true(arena.boss.dead_sprite.visible, "DeadSprite remains visible on completion screen")
 
 	# Weapons and projectiles cleaned up

@@ -98,3 +98,14 @@ To complete visual fidelity for currently implemented gameplay (Stage 1 Levels 1
    - **Cruiser Plasma Burst SFX:** Heavy energy cannon volley shot ($\approx 0.3\text{–}0.5\text{s}$).
    - **Electrical Stun Loop:** Low buzzing/crackling electrical loop for stunned capital ship ($\approx 2.0\text{s}$ seamless loop).
    - **Cruiser Catastrophic Destruction SFX:** Deep reverberating explosion / reactor core failure sound when HP reaches 0 ($\approx 2.0\text{s}$).
+
+---
+
+## 6. Milestone 11 Asset Integration Status & Stage 3 Rail Confirmation
+
+1. **Stage 3 Final Boss Core Phase 1 (`boss_alive_p1.png`): INTEGRATED**
+   - Connected in `scenes/bosses/final_boss.tscn` under `Visuals/OfficialArt/Phase1Sprite` ($513 \times 622\text{ px}$, uniform $0.36\times$ scale, `RectangleShape2D(180, 180)`).
+   - `boss_alive_p2.png`, `boss_alive_p3.png`, `boss_alive_p4.png`, and `boss_dead.png` are staged hidden for Milestones 12+.
+2. **Stage 3 Modular Track Confirmation (`Wheel Top.png`, `Wheel Bottom.png`, `Ropes.png`, `Example 1 Alive Phase 1.png`): AWAITING CONFIRMATION**
+   - The assembly reference shows a $513 \times 1425\text{ px}$ vertical gantry frame along which the Core slides vertically.
+   - **Clarification Requested:** Should the Final Boss track remain a vertical side-rail on the right edge of the $1280 \times 720$ viewport, or be oriented horizontally along the top edge for the arcade boss arena? Until confirmed, the Core runs an upper-arena horizontal patrol without unapproved rail collision geometry.

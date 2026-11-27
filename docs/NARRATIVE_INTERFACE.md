@@ -273,10 +273,26 @@ With Milestone 10 introducing Phase 2 of the Guard Cruiser encounter, final boss
   "boss_final_health": 0,
   "stage_completed": true,
   "next_stage": 3,
-  "next_stage_available": false,
+  "next_stage_available": true,
   "description": "Guard Cruiser defeated. Hostile defense perimeter compromised. Stage 3 warp corridor coordinates located."
 }
 ```
 
 > [!NOTE]
 > All narrative descriptions and dialogue hooks remain non-canonical stubs pending official creative writing deliverables.
+
+---
+
+## 11. Stage 3 Level 1 Semantic Dialogue Event Hooks (Milestone 11)
+
+With Milestone 11 introducing Stage 3 entry and Final Boss Phase 1 (`800 -> 600 HP`), the following non-canonical semantic hooks are reserved for future narrative integration:
+
+| Event ID | Trigger Timing | Associated Payload / Context |
+| :--- | :--- | :--- |
+| `stage3_l1_entered` | Stage 2 $\to$ Stage 3 transition | Player enters deep core sector at 12/12 HP with carried-over equipment |
+| `stage3_l1_boss_phase1_started` | Stage 3 Level 1 encounter start | Final Boss reactor core online (`800 / 800 HP`, Phase 1) |
+| `stage3_l1_boss_stunned` | EM Jammer pulse hits Final Boss | 10-second stun window (zero damage) |
+| `stage3_l1_phase1_completed` | Final Boss reaches `600 HP` | Phase 1 threshold cleared (`level_completed(1)`, `phase_1_completed`); Phase 2+ deferred |
+
+> [!NOTE]
+> No official Final Boss lore name or scripted dialogue has been confirmed by the narrative team; neutral technical identifiers (`"Final Boss"`, `"STAGE 3 / LEVEL 1"`) remain active.

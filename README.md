@@ -1,17 +1,17 @@
-# LAST SIGNAL - Godot Prototype (Milestone 10 — Stage 2 Level 5: Guard Cruiser Phase 2, Final Defeat & Stage 2 Completion)
+# LAST SIGNAL - Godot Prototype (Milestone 11 — Stage 3 Level 1: Final Boss Phase 1 + Stage 2 Integration Audit)
 
-> **Development Status:** WIP — Milestone 10 implemented, manual GUI QA pending.
-> A verified 2D space SHMUP prototype in Godot 4.7.2 featuring Stage 1 (Levels 1–5) and Stage 2 (Levels 1–5), introducing horizontal side-scrolling gameplay, Guard Bot security automata, Guard Satellite defense units with telegraph-based accurate lasers, Guard Drone kamikaze interceptors, EM Jammer active equipment (120° directional cone stun), full arcade mini-boss arena, Guard Cruiser mini-boss two-phase combat encounter (Phase 1: 400 to 200 HP threshold; Phase 2: 200 to 0 HP final defeat), official mini-boss Phase 1, Phase 2, and Defeat artwork integration, independent Stage 2 checkpoint revival, Stage 2 completion event payload, and comprehensive automated regression tests (1,614 / 1,614 passing assertions across 13 test suites).
+> **Development Status:** WIP — Milestone 11 implemented, manual GUI QA pending (M4–M11).
+> A verified 2D space SHMUP prototype in Godot 4.7.2 featuring Stage 1 (Levels 1–5), Stage 2 (Levels 1–5), and Stage 3 Level 1, introducing the Stage 2 $\to$ Stage 3 transition, a persistent four-phase Final Boss foundation (`800` total HP), Phase 1 combat (`800 -> 600 HP`), official Stage 3 Core Phase 1 artwork integration, full equipment inheritance (Twin-Barrel Blasters, Shield, EM Jammer), an independent Stage 3 checkpoint system, and comprehensive automated regression tests (1,790 / 1,790 passing assertions across 14 test suites).
 
 ## Setup
 
 1. Download **Godot 4.7.2 stable — Standard** from https://godotengine.org/download/ (not .NET).
 2. Extract the starter ZIP to a local folder.
 3. In Godot Project Manager, click **Import**, locate this folder's `project.godot`, and open it.
-4. Press **F6** from `scenes/main.tscn` (Stage 1 direct gameplay), `scenes/stage2/stage2_main.tscn` (Stage 2 side-scrolling), `scenes/stage2/boss_arena.tscn` (Stage 2 Boss Arena), or `scenes/ui/main_menu.tscn` (menu flow), or **F5** to start.
-5. Move the mouse to steer the ship. In Stage 1, evade/destroy asteroids for 30 seconds. In Stage 2 Level 1, survive the hostile sector for 15 seconds against Guard Bots. In Stage 2 Level 2, survive for 20 seconds against Guard Satellites and accurate laser beams. In Stage 2 Level 3, eliminate 5 Guard Drone interceptors to recover the EM Jammer. In Stage 2 Level 4, face the Guard Cruiser mini-boss in the arcade arena: fire blasters with Left Mouse Button, trigger the EM Jammer with **E** to stun the cruiser for 10 seconds, and reduce its HP from 400 to 200 to complete Phase 1. Press **Space/Enter** to advance to Stage 2 Level 5 (Phase 2): combat intensifies with 5-shot spreads and higher mobility (115 px/s), continuing until the cruiser is defeated at 0 HP. Press **R** to restart/revive, **Esc** to quit.
+4. Press **F6** from `scenes/main.tscn` (Stage 1 direct gameplay), `scenes/stage2/stage2_main.tscn` (Stage 2 side-scrolling), `scenes/stage2/boss_arena.tscn` (Stage 2 Boss Arena), `scenes/stage3/stage3_main.tscn` (Stage 3 Level 1 Final Boss Phase 1), or `scenes/ui/main_menu.tscn` (menu flow), or **F5** to start.
+5. Move the mouse to steer the ship, Left Mouse Button to fire blasters (once acquired), **E** to trigger the EM Jammer cone stun, **Space/Enter** to advance between completed levels/stages, **R** to restart/revive at stage checkpoint, and **Esc** to quit.
 
-## Current Prototype Implementation Status (Milestone 10 — Stage 2 Level 5)
+## Current Prototype Implementation Status (Milestone 11 — Stage 3 Level 1)
 
 - **Stage 1 (Levels 1–5 Complete):**
   - **Level 1:** Unarmed navigation & evasion through small asteroids.
@@ -94,7 +94,13 @@
         ```
       - Boss node persists on screen with `miniboss_dead.png`.
     - **Stage 2 Checkpoint Revive:** Player death in Level 5 revives strictly at **Stage 2 Level 1** at full $12\text{ HP}$ with primary weapon and shield retained, while unearned EM Jammer is cleared. Does NOT reset to Stage 1.
-    - **Milestone Scope Boundary:** Stage 3 gameplay and scenes are strictly deferred.
+    - **Milestone Scope Boundary:** Stage 2 completion prompts [Space/Enter] to advance to Stage 3 Level 1.
+- **Stage 3 Level 1 (Final Boss Phase 1 & Stage 2 Integration Audit):**
+  - **Stage 2 $\to$ Stage 3 Transition:** Pressing [Space/Enter] after Guard Cruiser defeat validates Stage 2 completion, stops Stage 2 combat, carries forward earned Primary Weapon, Shield Hardware, and EM Jammer (preserving remaining cooldown provisionally), and restores player HP to `12 / 12`.
+  - **Persistent 4-Phase Final Boss (`scenes/bosses/final_boss.tscn`):** One persistent boss entity (`800` total HP) structured for four phases (`800->600`, `600->400`, `400->200`, `200->0`). Phase 1 (`800 -> 600 HP`) is active in Milestone 11; Phases 2–4 and the Stage 3 Level 5 60s escape sequence remain deferred.
+  - **Official Art Integration:** Integrated `boss_alive_p1.png` ($513 \times 622$, scaled $0.36\times$) with `Phase2Sprite`..`Phase4Sprite` and `DeadSprite` reserved/hidden. Auxiliary rail components (`Wheel Top`, `Wheel Bottom`, `Ropes`) remain staged/TBD awaiting arena orientation confirmation.
+  - **Provisional Phase 1 Combat & EM Jammer:** Upper-arena patrol ($65.0\text{ px/s}$), $2.8\text{s}$ attack interval, $0.6\text{s}$ telegraph windup, 3-bolt dodgeable spread ($300.0\text{ px/s}$, 1 dmg), and full EM Jammer $120^\circ$ / $10.0\text{s}$ zero-damage stun support.
+  - **Stage 3 Checkpoint:** Player death in Stage 3 revives strictly at **Stage 3 Level 1** with `12 / 12` HP, boss reset to `800 HP`, cleared combat cooldowns, and all previously earned equipment retained.
 
 ## Project files
 
@@ -121,8 +127,8 @@ assets/
       guard_drone/             # Guard Drone sprites (idle, attacking)
     npc/                       # Nirawak 1 assets (awaiting confirmation)
     bosses/
-      stage2_miniboss/         # Stage 2 mini-boss assets (P1 integrated, P2/Dead reserved)
-      stage3_boss/             # Stage 3 multi-part boss assets (reserved)
+      stage2_miniboss/         # Stage 2 mini-boss assets (P1, P2, Dead integrated)
+      stage3_boss/             # Stage 3 Final Boss assets (P1 integrated; P2-P4/Dead/Rails reserved)
   ui/
     buttons/                   # Main menu & Stage 1-3 level select buttons
     labels/                    # Overheat UI label (reserved)
@@ -141,10 +147,13 @@ scenes/
     guard_drone.tscn           # Guard Drone kamikaze interceptor
     enemy_projectile.tscn      # Enemy normal projectile
   bosses/
-    guard_cruiser.tscn         # Guard Cruiser mini-boss entity (Phase 1)
+    guard_cruiser.tscn         # Guard Cruiser mini-boss entity (Phases 1 & 2)
+    final_boss.tscn            # Stage 3 Final Boss entity (Phase 1 active; Phases 2-4 reserved)
   stage2/
     stage2_main.tscn           # Stage 2 Main Coordinator (Levels 1-3)
-    boss_arena.tscn            # Stage 2 Boss Arena (Level 4)
+    boss_arena.tscn            # Stage 2 Boss Arena (Levels 4-5)
+  stage3/
+    stage3_main.tscn           # Stage 3 Main Coordinator (Level 1 / Phase 1)
   ui/
     main_menu.tscn
     level_select.tscn
@@ -176,11 +185,16 @@ scripts/
   bosses/
     guard_cruiser.gd
     guard_cruiser_visual.gd
+    final_boss.gd
+    final_boss_visual.gd
+    final_boss_telegraph.gd
   equipment/
     em_jammer_controller.gd
   stage2/
     stage2_main.gd
     boss_arena.gd
+  stage3/
+    stage3_main.gd
   ui/
     main_menu.gd
     level_select.gd
@@ -197,7 +211,9 @@ tests/
   test_milestone7.gd           # 153 assertions PASS
   test_milestone8.gd           # 166 assertions PASS
   test_milestone9.gd           # 169 assertions PASS
-  (Total: 1,451 assertions, 100% PASS across 12 test suites)
+  test_milestone10.gd          # 163 assertions PASS
+  test_milestone11.gd          # 176 assertions PASS
+  (Total: 1,790 assertions, 100% PASS across 14 test suites)
 ```
 
 ## Architecture & Style Rules

@@ -643,15 +643,18 @@ The following mechanics are **NOT part of the approved Stage 1 design** and must
         "boss_final_health": 0,
         "stage_completed": true,
         "next_stage": 3,
-        "next_stage_available": false
+        "next_stage_available": true
       }
       ```
     - Completion banner proclaims:
       ```
       STAGE 2 COMPLETE!
+
       GUARD CRUISER DEFEATED
-      [STAGE 3 — NOT YET IMPLEMENTED]
-      Press [R] to replay Stage 2 from Checkpoint
+      BOSS HP: 000 / 400
+
+      Press [Space/Enter] to Begin Stage 3
+      Press [R] to Replay Stage 2
       ```
 - **Stage 2 Checkpoint & Tie-Breaking Semantics:**
   - Player death in Level 5 displays `SHIP DESTROYED (STAGE 2 / LEVEL 5)\nPress [R] to Revive at Stage 2 Checkpoint`.
@@ -659,5 +662,50 @@ The following mechanics are **NOT part of the approved Stage 1 design** and must
   - Deterministic tie-breaking:
     - If player dies before or simultaneously with boss defeat, player loss stands (`game_won = false`).
     - If boss defeat is confirmed while player is alive, victory stands (`game_won = true`).
-- **Milestone Scope Boundary:**
-  - Stage 3 gameplay, enemies, final boss, and scenes are strictly deferred to future milestones.
+- **Stage 1–2 Integration Audit Targeted Fix (`scripts/stage2/stage2_main.gd`):**
+  - During the Milestone 11 Stage 1–2 audit, `Stage2Main.advance_to_next_level()` (Level 3 $\to$ Level 4) was observed instantiating `BossArena` with `preserved_hp` and then calling `change_scene_to_file()` in live GUI mode, which created a duplicate `BossArena` and lost `preserved_hp`. Updated live scene-swap in `stage2_main.gd` and `boss_arena.gd` to mount the already-initialized coordinator directly (`root.add_child(...)`, `current_scene = ...`, `queue_free()`).
+
+---
+
+## 19. Milestone 11: Stage 3 Level 1 — Final Boss Phase 1
+
+- **Stage 2 $\to$ Stage 3 Transition:**
+  - Upon completing Stage 2 Level 5 (`stage_2_completed = true`, player alive), pressing `Space` or `Enter` invokes `BossArena.advance_to_stage_3()`.
+  - Rejects incomplete runs, dead player, and duplicate transition requests.
+  - Stops Stage 2 combat, clears temporary projectiles, carries forward permanent equipment (`primary_weapon_acquired`, `shield_acquired`, `em_jammer_acquired`) and provisional EM Jammer remaining cooldown (`em_jammer_cooldown_remaining`), restores player HP to `12 / 12` under the new-stage policy, and mounts `Stage3Main` (`scenes/stage3/stage3_main.tscn`).
+  - Level Select remains strictly locked except Stage 1 Level 1.
+- **Stage 3 Coordinator (`scenes/stage3/stage3_main.tscn` / `scripts/stage3/stage3_main.gd`):**
+  - Fixed $1280 \times 720$ full-arcade arena with deep crimson/indigo starfield backdrop.
+  - Follows strict Call Down / Signal Up and interacts with protected nodes (`Player`, `WeaponController`, `EMJammerController`) exclusively through public methods/properties.
+  - HUD displays `STAGE 3 / LEVEL 1     HP %02d / %02d`, `FINAL BOSS: %03d / %03d HP`, and `EM JAMMER` readiness/cooldown status.
+- **Persistent Four-Phase Final Boss (`scenes/bosses/final_boss.tscn` / `scripts/bosses/final_boss.gd`):**
+  - One persistent `Area2D` entity (`FinalBoss`, neutral technical identifier `"Final Boss"` pending canonical lore name confirmation) designed across four continuous combat phases:
+    - Phase 1 (Level 1): `800 -> 600 HP` (**ACTIVE in Milestone 11**)
+    - Phase 2 (Level 2): `600 -> 400 HP` (*deferred*)
+    - Phase 3 (Level 3): `400 -> 200 HP` (*deferred*)
+    - Phase 4 (Level 4): `200 -> 0 HP` (*deferred*)
+    - Stage 3 Level 5 (60s escape sequence): *deferred*
+  - Collision Layer `18` (Combat Target | Enemies), Mask `5` (Player | Player Projectiles), neutral root scale `Vector2.ONE`, `RectangleShape2D(180, 180)`.
+- **Official Phase 1 Artwork Integration:**
+  - `Visuals/OfficialArt/Phase1Sprite` loads `res://assets/sprites/bosses/stage3_boss/boss_alive_p1.png` ($513 \times 622\text{ px}$), uniformly scaled to $0.36 \times 0.36$ ($\approx 184.7 \times 223.9\text{ px}$).
+  - `Phase2Sprite`, `Phase3Sprite`, `Phase4Sprite`, and `DeadSprite` are staged and strictly hidden in Milestone 11.
+- **Provisional Phase 1 Combat Tuning (`@export`):**
+  - Patrols horizontally in the upper arena ($Y = 160$, $X \in [240, 1040]$) at `65.0 px/s`.
+  - Attack cadence: `2.8s` interval, `0.6s` windup telegraph (`TelegraphOverlay` + aim lock), fires `3` projectiles per burst across `18.0°` spread at `300.0 px/s` (`1 HP` damage, dodgeable, friendly-fire immune).
+- **EM Jammer in Stage 3:**
+  - Reuses `EMJammerController` (`120°` cone, `10.0s` stun, `30.0s` cooldown, `0` damage). Stun halts boss movement and cancels active attack windups while preserving weapon vulnerability. Unearned jammer stays blocked.
+- **Phase 1 Completion at `600 HP`:**
+  - Health clamps cleanly at `600 HP`, transitions boss state to `PHASE_1_COMPLETE`, disables collision monitoring/damage, disables player weapon firing, clears projectiles, emits `phase_threshold_reached(1)`, `phase_1_completed`, and `level_completed(1)`, and preserves the visible boss (no `defeated` signal, `DeadSprite` stays hidden).
+  - Banner displays:
+    ```
+    STAGE 3 / LEVEL 1 COMPLETE
+    FINAL BOSS — PHASE 1 COMPLETE
+    BOSS HP: 600 / 800
+
+    [PHASE 2 — NEXT MILESTONE]
+    Press [R] to Replay Stage 3
+    ```
+- **Stage 3 Checkpoint:**
+  - Death in Stage 3 Level 1 halts combat, disables firing/jammer, and displays `SHIP DESTROYED (STAGE 3 / LEVEL 1)\nPress [R] to Revive at Stage 3 Checkpoint`.
+  - Pressing `R` revives strictly at **Stage 3 Level 1** with `12 / 12` HP, resets boss to `800 / 800 HP` (`PHASE_1`), resets temporary combat cooldowns, clears projectiles, and **preserves permanently acquired Primary Weapon, Shield, and EM Jammer**.
+  - Stage 1 and Stage 2 checkpoints remain completely isolated and unaffected.

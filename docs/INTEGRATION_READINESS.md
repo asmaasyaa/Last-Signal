@@ -236,3 +236,21 @@ Milestone 10 activates the remaining official Guard Cruiser artwork from Batch 0
    - All 3 delivered mini-boss sprites from Batch 01 are now fully connected, active, and operational in runtime gameplay.
 3. **Automated Verification Baseline:**
    - 1,614 total automated assertions across 13 test suites (Milestones 1 through 10) passing with 0 failures.
+
+---
+
+## 13. Milestone 11: Stage 3 Level 1 Final Boss Phase 1 Art Integration & Composition Audit
+
+Milestone 11 integrates the Stage 3 Final Boss Phase 1 core artwork from Batch 01 into runtime gameplay (`scenes/bosses/final_boss.tscn`):
+
+1. **Final Boss Official Core Artwork Integration (`scenes/bosses/final_boss.tscn`):**
+   - **Active Phase 1 Sprite:** `res://assets/sprites/bosses/stage3_boss/boss_alive_p1.png` ($513 \times 622\text{ px}$) under `Visuals/OfficialArt/Phase1Sprite`.
+   - **Uniform Aspect-Preserving Scale:** Scaled uniformly to $0.36 \times 0.36$ ($\approx 184.7 \times 223.9\text{ px}$), `rotation = 0.0`, keeping root `Area2D` physics scale strictly `Vector2.ONE`.
+   - **Hitbox Alignment:** `RectangleShape2D(180.0, 180.0)` closely matches the armored square housing of the Core without extending into empty transparent margins.
+   - **Staged & Hidden Reserved Core States:** `boss_alive_p2.png`, `boss_alive_p3.png`, `boss_alive_p4.png` ($513 \times 625$), and `boss_dead.png` are loaded under `Visuals/OfficialArt/` and remain strictly hidden until future milestones.
+   - **Procedural Fallback & Telegraph Overlay:** `Visuals/ProceduralFallback` activates automatically if `official_art_enabled = false`; `Visuals/TelegraphOverlay` ($z=2$) renders attack windup warnings and EM Jammer electrical stun arcs above the official sprite.
+2. **Modular Track Component Audit (`Wheel Top`, `Wheel Bottom`, `Ropes`, `Example 1`):**
+   - Visual inspection confirms `boss_wheel_top.png` ($513 \times 200$), `boss_wheel_bottom.png` ($513 \times 200$), and `boss_ropes.png` ($408 \times 1035$) form a vertical rail gantry ($513 \times 1425$ in `boss_reference_assembled_p1.png`).
+   - Because Stage 3 Level 1 runs an upper-arena horizontal patrol and track orientation (horizontal top rail vs vertical side gantry) is awaiting team confirmation, these rail assets remain staged and unmounted (`IMPORTED / RESERVED`) with zero invented mechanical collision.
+3. **Automated Verification Baseline:**
+   - **1,790 total automated assertions across 14 test suites (Milestones 1 through 11)** passing with 0 failures.

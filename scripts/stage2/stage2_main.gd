@@ -340,7 +340,10 @@ func advance_to_next_level() -> Variant:
 		if arena.has_method("initialize_from_stage2_level3"):
 			arena.initialize_from_stage2_level3(stage_data)
 		if is_inside_tree() and get_tree().current_scene == self:
-			get_tree().change_scene_to_file("res://scenes/stage2/boss_arena.tscn")
+			var tree: SceneTree = get_tree()
+			tree.root.add_child(arena)
+			tree.current_scene = arena
+			queue_free()
 		return arena
 	return null
 

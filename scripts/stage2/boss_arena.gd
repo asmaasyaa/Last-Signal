@@ -11,6 +11,7 @@ signal stage_completed(payload: Dictionary)
 
 const GUARD_CRUISER_SCENE = preload("res://scenes/bosses/guard_cruiser.tscn")
 const PROJECTILE_SCENE = preload("res://scenes/projectile.tscn")
+const STAGE3_MAIN_SCENE = preload("res://scenes/stage3/stage3_main.tscn")
 
 @export var stage_number: int = 2
 @export var current_level: int = 4
@@ -19,6 +20,7 @@ const PROJECTILE_SCENE = preload("res://scenes/projectile.tscn")
 var finished: bool = false
 var game_won: bool = false
 var stage_2_completed: bool = false
+var _transitioning_to_stage3: bool = false
 var stars: Array[Vector2] = []
 var star_offset: float = 0.0
 
@@ -123,6 +125,8 @@ func start_level(target_level: int, starting_hp: int = 12) -> void:
 	current_level = target_level
 	finished = false
 	game_won = false
+	stage_2_completed = false
+	_transitioning_to_stage3 = false
 
 	_clear_spawned_projectiles()
 
@@ -300,7 +304,7 @@ func _on_boss_defeated() -> void:
 		"boss_max_health": 400,
 		"stage_completed": true,
 		"next_stage": 3,
-		"next_stage_available": false
+		"next_stage_available": true
 	}
 
 	stage_acquisitions["stage2_completed"] = true
@@ -311,7 +315,7 @@ func _on_boss_defeated() -> void:
 
 	if is_instance_valid(message):
 		message.visible = true
-		message.text = "STAGE 2 COMPLETE!\n\nGUARD CRUISER DEFEATED\nBOSS HP: 000 / 400\n\n[STAGE 2 LEVEL 5 COMPLETE]\n[STAGE 3 — NOT YET IMPLEMENTED]\n\nPress [R] to replay Stage 2 from Checkpoint"
+		message.text = "STAGE 2 COMPLETE!\n\nGUARD CRUISER DEFEATED\nBOSS HP: 000 / 400\n\nPress [Space/Enter] to Begin Stage 3\nPress [R] to Replay Stage 2"
 
 	_update_hud()
 	_update_debug_overlay()
@@ -342,15 +346,64 @@ func _on_player_died() -> void:
 	_update_debug_overlay()
 
 
+func advance_to_stage_3() -> Node:
+	if _transitioning_to_stage3:
+		return null
+	if not (finished and game_won and current_level == 5 and stage_2_completed):
+		return null
+	if not is_instance_valid(player) or not player.alive:
+		return null
+
+	_transitioning_to_stage3 = true
+
+	if is_instance_valid(player):
+		player.set_physics_process(false)
+	if is_instance_valid(weapon_controller):
+		weapon_controller.set_firing_enabled(false)
+	if is_instance_valid(boss):
+		boss.stop_attack()
+	_clear_spawned_projectiles()
+
+	var jammer_cd: float = 0.0
+	if is_instance_valid(em_jammer_controller) and em_jammer_controller.has_method("get_cooldown_remaining"):
+		jammer_cd = em_jammer_controller.get_cooldown_remaining()
+
+	var stage_data: Dictionary = {
+		"primary_weapon_acquired": is_primary_weapon_acquired(),
+		"shield_acquired": is_shield_acquired(),
+		"em_jammer_acquired": is_em_jammer_acquired(),
+		"em_jammer_cooldown_remaining": jammer_cd,
+		"stage_2_completed": true,
+		"from_stage": 2,
+		"from_level": 5
+	}
+
+	var stage3_inst: Node = STAGE3_MAIN_SCENE.instantiate()
+	if stage3_inst.has_method("initialize_from_stage2"):
+		stage3_inst.initialize_from_stage2(stage_data)
+
+	if is_inside_tree() and get_tree().current_scene == self:
+		var tree: SceneTree = get_tree()
+		tree.root.add_child(stage3_inst)
+		tree.current_scene = stage3_inst
+		queue_free()
+
+	return stage3_inst
+
+
 func revive_at_stage_checkpoint() -> Node:
-	# Reviving from Level 4 returns strictly to Stage 2 Level 1!
+	# Reviving from Level 4/5 returns strictly to Stage 2 Level 1!
+	_transitioning_to_stage3 = false
 	var stage2_scene = load("res://scenes/stage2/stage2_main.tscn") as PackedScene
 	var stage2_inst = stage2_scene.instantiate()
 	if stage2_inst.has_method("revive_at_stage_checkpoint"):
 		stage2_inst.revive_at_stage_checkpoint()
 
 	if is_inside_tree() and get_tree().current_scene == self:
-		get_tree().change_scene_to_file("res://scenes/stage2/stage2_main.tscn")
+		var tree: SceneTree = get_tree()
+		tree.root.add_child(stage2_inst)
+		tree.current_scene = stage2_inst
+		queue_free()
 	return stage2_inst
 
 
@@ -412,8 +465,11 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		elif event.keycode == KEY_R or event.physical_keycode == KEY_R:
 			revive_at_stage_checkpoint()
 		elif event.keycode == KEY_SPACE or event.keycode == KEY_ENTER:
-			if finished and game_won and current_level == 4:
-				advance_to_next_level()
+			if finished and game_won:
+				if current_level == 4:
+					advance_to_next_level()
+				elif current_level == 5 and stage_2_completed:
+					advance_to_stage_3()
 		elif event.keycode == KEY_ESCAPE:
 			get_tree().quit()
 

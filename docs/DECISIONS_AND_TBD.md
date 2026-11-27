@@ -308,3 +308,29 @@ This document tracks unresolved balance parameters, provisional features, and pe
   3. *Transition Pacing:* Requiring a manual [Space/Enter] press between Phase 1 and Phase 2 gives the player time to observe their remaining HP and prepare. Is this preferred over an immediate automatic transition?
   4. *Defeat Screen Permanence:* The boss remains visible as a shattered hull (`miniboss_dead.png`) behind the banner rather than vanishing. Leads should confirm whether explosion VFX / debris particles should be requested for Phase 3 polish.
 - **Status:** **Configurable Baseline / Subject to Lead Review during playtesting.**
+
+---
+
+## 17. Milestone 11: Stage 3 Level 1 Final Boss Phase 1 & Integration Audit TBDs
+
+- **Date:** 2026-11-27
+- **Scope:** Stage 2 $\to$ Stage 3 transition, Stage 3 Level 1 (`Stage3Main`), persistent 4-phase `FinalBoss` foundation, Phase 1 combat (`800 -> 600 HP`), Stage 3 checkpoint, and Stage 1–2 integration audit.
+- **Confirmed / Inherited Specifications:**
+  - Single persistent Final Boss entity with `800` total HP and 4 combat phases (`800->600`, `600->400`, `400->200`, `200->0`), followed by a deferred 60s escape sequence in Stage 3 Level 5.
+  - New-stage HP restoration policy (`12 / 12` HP on Stage 3 Level 1 entry).
+  - Earned equipment inheritance: Primary Weapon, Shield Hardware, and EM Jammer (if acquired in Stage 2) persist across Stage 2 $\to$ Stage 3 and across Stage 3 checkpoint revivals.
+- **Provisional Parameters (`@export` in `scripts/bosses/final_boss.gd`):**
+  - `@export var phase_1_move_speed: float = 65.0` (upper-arena horizontal patrol speed in px/s)
+  - `@export var phase_1_attack_interval: float = 2.8` (seconds between burst cycles)
+  - `@export var phase_1_windup_duration: float = 0.6` (seconds of dodgeable telegraph warning)
+  - `@export var phase_1_projectile_speed: float = 300.0` (px/s)
+  - `@export var phase_1_projectile_damage: int = 1` (HP per bolt)
+  - `@export var phase_1_burst_count: int = 3` (projectiles per volley)
+  - `@export var phase_1_burst_spread_angle: float = 18.0` (fan divergence in degrees)
+  - **Stage Boundary EM Jammer Cooldown Rule (PROVISIONAL):** Remaining `em_jammer_controller.cooldown_remaining` is preserved across the Stage 2 $\to$ Stage 3 transition to prevent an unapproved free stun reset, while Stage 3 checkpoint revival (`[R]`) resets cooldowns to `0.0` for a fresh run.
+- **Open Decisions / TBDs Requiring Team Lead Confirmation:**
+  1. *Canonical Final Boss Name:* Official lore/character name is unconfirmed in team docs; neutral `"Final Boss"` is used.
+  2. *Rail & Assembly Components (`boss_wheel_top.png`, `boss_wheel_bottom.png`, `boss_ropes.png`, `boss_reference_assembled_p1.png`):* Visual inspection shows the Core sliding along vertical parallel rails between Top/Bottom Wheel gantries (`513 × 1425` vertical assembly). Because Stage 3 Level 1 runs a $1280 \times 720$ upper-arena patrol prototype and team confirmation on vertical vs horizontal track mounting is pending, those auxiliary rail sprites remain staged/unmounted rather than attached with arbitrary hitboxes.
+  3. *10-Second EM Jammer Stun vs Final Boss:* Full 10.0s stun duration allows $\approx 120$ blaster shots (120 HP of Phase 1's 200 HP window). Leads should evaluate during manual playtesting whether final boss stun resistance or Phase 2+ adaptation is desired.
+  4. *Stage 3 Level 2–5 Deferred Mechanics:* Phases 2–4 attack behaviors and the Level 5 60s escape sequence remain strictly deferred to Milestone 12+.
+- **Status:** **Configurable Baseline / Provisional Tuning Pending Lead Review.**
