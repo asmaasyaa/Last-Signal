@@ -6,6 +6,12 @@ signal died
 
 @export var max_health: int = 12
 @export var move_speed: float = 500.0
+@export var acceleration: float = 2400.0 # PROVISIONAL (TBD): smooth thrust ramp-up in px/s^2
+@export var deceleration: float = 3000.0 # PROVISIONAL (TBD): smooth braking deceleration in px/s^2
+@export var slow_radius: float = 75.0 # PROVISIONAL (TBD): distance from cursor to begin smooth arrival braking
+@export var side_speed_scale: float = 1.0 # PROVISIONAL (TBD): lateral speed multiplier relative to move_speed
+@export var reverse_speed_scale: float = 1.0 # PROVISIONAL (TBD): backward speed multiplier relative to move_speed
+@export var forward_direction: Vector2 = Vector2.UP # Base forward facing direction (UP = 0 deg, RIGHT for side-scrolling)
 @export var stop_threshold: float = 8.0 # Speed threshold below which the ship is considered stationary
 @export var arrive_distance: float = 4.0 # Distance to mouse within which ship has arrived and is stationary
 @export var regen_wait: float = 2.0 # PROVISIONAL (TBD): stationary delay before passive regen starts
@@ -94,6 +100,12 @@ func get_visuals_node() -> Node2D:
 	return visuals
 
 
+func set_forward_direction(dir: Vector2) -> void:
+	if dir.length_squared() > 0.0001:
+		forward_direction = dir.normalized()
+		rotation = Vector2.UP.angle_to(forward_direction)
+
+
 func reset_state() -> void:
 	health = max_health
 	alive = true
@@ -102,6 +114,7 @@ func reset_state() -> void:
 	regen_fraction = 0.0
 	contact_cooldown.clear()
 	target_position_override = null
+	set_forward_direction(forward_direction)
 	set_physics_process(true)
 	update_visual_state()
 	health_changed.emit(health, max_health)
@@ -123,6 +136,7 @@ func prepare_for_level(starting_health: int = -1) -> void:
 	regen_fraction = 0.0
 	contact_cooldown.clear()
 	target_position_override = null
+	set_forward_direction(forward_direction)
 	set_physics_process(true)
 	update_visual_state()
 	health_changed.emit(health, max_health)
@@ -138,26 +152,74 @@ func _physics_process(delta: float) -> void:
 
 
 func _update_movement(delta: float) -> void:
-	var mouse_pos: Vector2 = target_position_override if target_position_override != null else get_global_mouse_position()
-	var to_mouse: Vector2 = mouse_pos - global_position
-	var distance_to_mouse: float = to_mouse.length()
+	var forward_dir: Vector2 = forward_direction.normalized() if forward_direction.length_squared() > 0.0001 else Vector2.UP
+	rotation = Vector2.UP.angle_to(forward_dir)
 
-	# If within arrival deadzone, ship has reached cursor and is considered stationary
-	if distance_to_mouse <= arrive_distance:
+	if delta <= 0.0 or move_speed <= 0.0:
 		movement_velocity = Vector2.ZERO
-	else:
-		var step: Vector2 = to_mouse.limit_length(move_speed * delta)
-		var destination: Vector2 = global_position + step
+		return
 
+	var mouse_pos: Vector2 = target_position_override if target_position_override != null else get_global_mouse_position()
+	var target_pos := Vector2(
+		clampf(mouse_pos.x, play_area_min.x, play_area_max.x),
+		clampf(mouse_pos.y, play_area_min.y, play_area_max.y)
+	)
+	var to_target: Vector2 = target_pos - global_position
+	var distance_to_target: float = to_target.length()
+
+	# Within arrival deadzone: decelerate smoothly to stationary
+	if distance_to_target <= arrive_distance:
+		if movement_velocity.length() <= stop_threshold:
+			movement_velocity = Vector2.ZERO
+		else:
+			movement_velocity = movement_velocity.move_toward(Vector2.ZERO, deceleration * delta)
+			var brake_dest: Vector2 = global_position + movement_velocity * delta
+			brake_dest.x = clampf(brake_dest.x, play_area_min.x, play_area_max.x)
+			brake_dest.y = clampf(brake_dest.y, play_area_min.y, play_area_max.y)
+			movement_velocity = (brake_dest - global_position) / delta
+			global_position = brake_dest
+			if movement_velocity.length() <= stop_threshold:
+				movement_velocity = Vector2.ZERO
+		return
+
+	var move_dir: Vector2 = to_target / distance_to_target
+	var arrival_ratio: float = clampf(
+		(distance_to_target - arrive_distance) / maxf(slow_radius - arrive_distance, 0.001),
+		0.0,
+		1.0
+	)
+	var arrival_speed: float = move_speed * sqrt(arrival_ratio)
+
+	# Allow optional directional tuning (default 1.0 = full speed in every direction)
+	var forward_cos: float = move_dir.dot(forward_dir)
+	var dir_scale: float = 1.0
+	if forward_cos >= 0.0:
+		dir_scale = lerpf(maxf(side_speed_scale, 0.05), 1.0, forward_cos)
+	else:
+		dir_scale = lerpf(maxf(side_speed_scale, 0.05), maxf(reverse_speed_scale, 0.05), -forward_cos)
+
+	var desired_speed: float = maxf(arrival_speed * dir_scale, minf(move_speed, stop_threshold + 4.0))
+
+	# Decompose velocity along move_dir to damp off-axis inertia and prevent icy drifting
+	var along_speed: float = movement_velocity.dot(move_dir)
+	var off_axis_velocity: Vector2 = movement_velocity - move_dir * along_speed
+	off_axis_velocity *= exp(-28.0 * delta)
+
+	var accel_rate: float = deceleration if (along_speed < 0.0 or desired_speed < along_speed) else acceleration
+	along_speed = move_toward(along_speed, desired_speed, accel_rate * delta)
+
+	movement_velocity = move_dir * along_speed + off_axis_velocity
+
+	var step: Vector2 = movement_velocity * delta
+	if step.length() >= distance_to_target and movement_velocity.dot(move_dir) > 0.0:
+		movement_velocity = (target_pos - global_position) / delta
+		global_position = target_pos
+	else:
+		var destination: Vector2 = global_position + step
 		destination.x = clampf(destination.x, play_area_min.x, play_area_max.x)
 		destination.y = clampf(destination.y, play_area_min.y, play_area_max.y)
-
-		movement_velocity = (destination - global_position) / maxf(delta, 0.00001)
+		movement_velocity = (destination - global_position) / delta
 		global_position = destination
-
-	# Facing direction follows movement velocity and is preserved when stationary
-	if movement_velocity.length() > stop_threshold:
-		rotation = Vector2.UP.angle_to(movement_velocity)
 
 
 func _update_regeneration(delta: float) -> void:
